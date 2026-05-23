@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Saude PF">
+<meta name="theme-color" content="#185FA5">
+<title>Operacao Saude PF</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#f4f4f2;color:#1a1a1a;min-height:100vh}
+:root{--pf:#185FA5;--pf-l:#E6F1FB;--pf-d:#0C447C;--ok:#3B6D11;--ok-l:#EAF3DE;--warn:#BA7517;--warn-l:#FAEEDA;--err:#A32D2D;--err-l:#FCEBEB;--bg:#fff;--bg2:#f4f4f2;--bg3:#ebebeb;--border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);--text:#1a1a1a;--text2:#666;--text3:#999;--r:8px;--rl:12px}
+body{background:var(--bg2);color:var(--text)}
+.app{max-width:600px;margin:0 auto;min-height:100vh}
+.topbar{background:var(--pf);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.tb-t{color:#fff;font-size:13px;font-weight:600;margin-left:8px}
+.tb-s{font-size:10px;color:rgba(255,255,255,.75);margin-top:1px}
+.tabs{display:flex;background:var(--bg);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:58px;z-index:99}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:9px 11px;font-size:12px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:4px;flex-shrink:0;transition:.15s}
+.tab.active{color:var(--pf);border-bottom-color:var(--pf);font-weight:600}
+.content{padding:14px}
+.sec{display:none}.sec.active{display:block}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.mc{background:var(--bg3);border-radius:var(--r);padding:11px;text-align:center}
+.mc .v{font-size:20px;font-weight:700}
+.mc .l{font-size:10px;color:var(--text2);margin-top:2px}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--rl);padding:13px;margin-bottom:10px}
+.card h3{font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:5px}
+label{font-size:12px;color:var(--text2);display:block;margin-bottom:3px}
+input,select{width:100%;font-size:13px;padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);margin-bottom:10px;outline:none;-webkit-appearance:none}
+input:focus,select:focus{border-color:var(--pf)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{padding:10px 16px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--bg);color:var(--text);display:inline-flex;align-items:center;gap:6px}
+.btn-p{background:var(--pf);color:#fff;border-color:var(--pf)}
+.btn-full{width:100%;justify-content:center}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-ok{background:var(--ok-l);color:var(--ok);border-color:var(--ok)}
+.ri{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.ri:last-child{border-bottom:none}
+.rn{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.r1{background:#FAC775;color:#412402}.r2{background:#D3D1C7;color:#2C2C2A}.r3{background:#F5C4B3;color:#4A1B0C}.rnn{background:var(--bg3);color:var(--text2)}
+.rii{flex:1;min-width:0}.rii .nm{font-size:13px;font-weight:500}.rii .sb{font-size:10px;color:var(--text2)}
+.pb{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:5px}
+.pbf{height:100%;background:var(--pf);border-radius:2px}
+.rpts{font-size:14px;font-weight:700;color:var(--pf);flex-shrink:0}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600}
+.bi{background:var(--pf-l);color:var(--pf-d)}.bs{background:var(--ok-l);color:var(--ok)}.bw{background:var(--warn-l);color:var(--warn)}
+.prow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.prow:last-child{border-bottom:none}
+.av{width:32px;height:32px;border-radius:50%;background:var(--pf-l);color:var(--pf-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.pi{flex:1;min-width:0}.pn{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pd{font-size:10px;color:var(--text2)}
+.etw{overflow-x:auto}
+.et{width:100%;font-size:11px;border-collapse:collapse}
+.et th{text-align:left;font-weight:600;color:var(--text2);padding:5px 6px;font-size:10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.et td{padding:6px;border-bottom:1px solid var(--border);white-space:nowrap}
+.et tr:last-child td{border-bottom:none}
+.dp{color:var(--ok);font-weight:600}.dn{color:var(--err);font-weight:600}
+.empty{text-align:center;padding:28px;color:var(--text2);font-size:13px}
+.ua{border:2px dashed var(--border2);border-radius:var(--rl);padding:18px;text-align:center;cursor:pointer;margin-bottom:10px;background:var(--bg2)}
+.ua.has{border-color:var(--ok);background:var(--ok-l)}
+.ua i{font-size:24px;color:var(--text3);margin-bottom:5px;display:block}
+.ua p{font-size:12px;color:var(--text2)}
+.ua input{display:none}
+.img-prev{width:100%;max-height:160px;object-fit:cover;border-radius:var(--r);margin-bottom:8px;display:none}
+.prog{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-bottom:8px;display:none}
+.prog-f{height:100%;background:var(--pf);border-radius:2px}
+.th-item{display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg3);border-radius:var(--r);margin-bottom:6px}
+.th-thumb{width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);background:var(--border)}
+.th-info{flex:1;min-width:0}
+.th-d{font-size:11px;font-weight:600}.th-t{font-size:10px;color:var(--text2)}
+.streak{background:var(--ok-l);border-radius:var(--rl);padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.streak-n{font-size:28px;font-weight:700;color:var(--ok)}
+.streak-t{font-size:12px;font-weight:600;color:var(--ok)}
+.streak-s{font-size:10px;color:var(--ok);opacity:.8;margin-top:2px}
+.pts-box{background:var(--pf-l);border-radius:var(--rl);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pts-v{font-size:26px;font-weight:700;color:var(--pf-d)}
+.pts-sub{text-align:right;font-size:10px;color:var(--pf-d)}
+.pts-sub span{display:block;font-size:13px;font-weight:700}
+.fullscreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#0C447C,#185FA5)}
+.auth-card{background:var(--bg);border-radius:20px;padding:28px 22px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.auth-logo{text-align:center;margin-bottom:20px}
+.auth-tabs{display:flex;background:var(--bg3);border-radius:var(--r);padding:3px;margin-bottom:18px}
+.auth-tab{flex:1;text-align:center;padding:7px;font-size:13px;font-weight:500;border-radius:6px;cursor:pointer;color:var(--text2)}
+.auth-tab.active{background:var(--bg);color:var(--pf);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#f0f0f0;padding:10px 20px;border-radius:var(--r);font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:9999}
+.toast.show{opacity:1}
+.tab-sub{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab-sub button{padding:5px 12px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer}
+.tab-sub button.active{background:var(--pf-l);color:var(--pf-d);border-color:var(--pf-l);font-weight:600}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg);border-radius:var(--rl);padding:16px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto}
+.modal img{width:100%;border-radius:var(--r);margin-bottom:10px}
+.cq-item{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:6px;font-size:10px;font-weight:600;margin:3px}
+.cq-ok{background:var(--ok-l);color:var(--ok)}.cq-no{background:var(--bg3);color:var(--text3)}
+.info-box{background:var(--pf-l);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--pf-d);margin-bottom:12px;line-height:1.5}
+.risco-card{border-radius:var(--rl);padding:16px;margin-bottom:10px;text-align:center}
+.risco-baixo{background:#EAF3DE;border:1px solid #3B6D11}
+.risco-moderado{background:#FAEEDA;border:1px solid #BA7517}
+.risco-alto{background:#FCEBEB;border:1px solid #A32D2D}
+.risco-muito-alto{background:#F5E6FF;border:1px solid #6B21A8}
+.risco-pct{font-size:32px;font-weight:700}
+.risco-label{font-size:13px;font-weight:600;margin-top:4px}
+.risco-desc{font-size:11px;margin-top:6px;opacity:.8}
+.pts-tr{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.pts-tr:last-child{border-bottom:none}
+.pts-tr .p{font-weight:700;color:var(--pf);font-size:13px}
+.sk{background:linear-gradient(90deg,var(--bg3) 25%,var(--border) 50%,var(--bg3) 75%);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:var(--r);height:60px;margin-bottom:8px}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+</head>
+<body>
+<div id="auth-screen" class="fullscreen" style="display:none">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <img src="data:image/png;base64,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" style="width:72px;height:72px;object-fit:contain" alt="PF" />
+      <div style="font-size:17px;font-weight:700;margin-top:10px">Operacao Saude PF</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:3px">Policia Federal - Promocao a Saude</div>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="showTab('login')">Entrar</div>
+      <div class="auth-tab" onclick="showTab('cadastro')">Cadastrar-se</div>
+    </div>
+    <div id="auth-login">
+      <label>Matricula</label>
+      <input id="login-mat" placeholder="Ex: 001234" onkeydown="if(event.key==='Enter')document.getElementById('login-pwd').focus()" />
+      <label>Senha</label>
+      <input id="login-pwd" type="password" placeholder="Senha" onkeydown="if(event.key==='Enter')doLogin()" />
+      <button class="btn btn-p btn-full" onclick="doLogin()"><i class="ti ti-login"></i> Entrar</button>
+      <p style="font-size:10px;color:var(--text3);text-align:center;margin-top:12px">Admin: matricula <b>admin</b></p>
+    </div>
+    <div id="auth-cadastro" style="display:none">
+      <div class="info-box">Campos * sao obrigatorios. Exames podem ser adicionados depois.</div>
+      <div class="fr">
+        <div><label>Nome *</label><input id="c-nome" placeholder="Seu nome" /></div>
+        <div><label>Matricula *</label><input id="c-mat" placeholder="001234" /></div>
+      </div>
+      <div class="fr">
+        <div><label>Time *</label>
+          <select id="c-dept"><option value="">Selecione...</option><option>DGP</option><option>APF</option><option>EPF</option><option>DELTA</option></select>
+        </div>
+        <div><label>Sexo *</label>
+          <select id="c-sexo"><option value="">Selecione...</option><option value="M">Masculino</option><option value="F">Feminino</option></select>
+        </div>
+      </div>
+      <div class="fr">
+        <div><label>Idade *</label><input id="c-idade" type="number" placeholder="35" /></div>
+        <div><label>Altura (cm) *</label><input id="c-altura" type="number" placeholder="175" /></div>
+      </div>
+      <div class="fr">
+        <div><label>Peso (kg) *</label><input id="c-peso" type="number" placeholder="85.4" /></div>
+        <div><label>Circ. abdominal (cm) *</label><input id="c-ca" type="number" placeholder="98" /></div>
+      </div>
+      <div class="fr">
+        <div><label>% Gordura</label><input id="c-gord" type="number" placeholder="28.5" step="0.1" /></div>
+        <div><label>PAS (mmHg)</label><input id="c-pas" type="number" placeholder="130" /></div>
+      </div>
+      <div class="fr">
+        <div><label>LDL (mg/dL)</label><input id="c-ldl" type="number" placeholder="145" /></div>
+        <div><label>TGL (mg/dL)</label><input id="c-tgl" type="number" placeholder="180" /></div>
+      </div>
+      <div class="fr">
+        <div><label>HbA1c (%)</label><input id="c-hba1c" type="number" placeholder="6.2" step="0.1" /></div>
+        <div><label>Tabagista?</label><select id="c-tabag"><option value="0">Nao</option><option value="1">Sim</option></select></div>
+      </div>
+      <div class="fr">
+        <div><label>Diabetes?</label><select id="c-dm"><option value="0">Nao</option><option value="1">Sim</option></select></div>
+        <div><label>Senha *</label><input id="c-pwd" type="password" placeholder="Min. 4 caracteres" /></div>
+      </div>
+      <button class="btn btn-p btn-full" onclick="doCadastro()"><i class="ti ti-user-plus"></i> Cadastrar e entrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="main-app" style="display:none">
+  <div class="app">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:8px">
+        <img src="data:image/png;base64,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" style="width:34px;height:34px;object-fit:contain" alt="PF" />
+        <div><div class="tb-t">Operacao Saude PF</div><div class="tb-s" id="tb-user"></div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="tb-pts" style="display:none;font-size:11px;color:rgba(255,255,255,.9);font-weight:600;background:rgba(255,255,255,.15);padding:3px 8px;border-radius:12px"></span>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);font-size:11px" onclick="logout()">Sair</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('ranking')"><i class="ti ti-trophy"></i> Ranking</div>
+      <div class="tab" onclick="switchTab('treino')"><i class="ti ti-run"></i> Treino</div>
+      <div class="tab" onclick="switchTab('evolucao')"><i class="ti ti-chart-line"></i> Evolucao</div>
+      <div class="tab" onclick="switchTab('lab')"><i class="ti ti-flask"></i> Lab</div>
+      <div class="tab" onclick="switchTab('pontos')"><i class="ti ti-star"></i> Pontos</div>
+      <div class="tab" onclick="switchTab('risco')"><i class="ti ti-heart-rate-monitor"></i> Risco CV</div>
+      <div class="tab admin-only" onclick="switchTab('participantes')" style="display:none"><i class="ti ti-users"></i> Participantes</div>
+      <div class="tab admin-only" onclick="switchTab('avaliacoes')" style="display:none"><i class="ti ti-clipboard-list"></i> Avaliacoes</div>
+      <div class="tab admin-only" onclick="switchTab('adm')" style="display:none"><i class="ti ti-settings"></i> Admin</div>
+    </div>
+    <div class="content">
+
+      <div id="sec-ranking" class="sec active">
+        <div class="g2" id="rank-metrics"></div>
+        <div class="card"><h3><i class="ti ti-trophy" style="color:var(--warn)"></i> Times</h3><div id="ranking-list"><div class="sk"></div><div class="sk"></div></div></div>
+        <div class="card"><h3><i class="ti ti-medal" style="color:var(--warn)"></i> Destaque individual</h3><div id="destaques-list"><div class="sk"></div></div></div>
+      </div>
+
+      <div id="sec-treino" class="sec">
+        <div class="streak" id="streak-box">
+          <div class="streak-n" id="streak-n">0</div>
+          <div><div class="streak-t">treinos esta semana</div><div class="streak-s">Max. 4 por semana - +5 pts cada</div></div>
+        </div>
+        <div class="card">
+          <h3><i class="ti ti-camera"></i> Registrar treino</h3>
+          <label>Tipo de atividade</label>
+          <select id="t-tipo"><option value="">Selecione...</option><option>Musculacao</option><option>Corrida</option><option>Natacao</option><option>Ciclismo</option><option>Futebol</option><option>Artes marciais</option><option>Caminhada</option><option>Funcional</option><option>Outro</option></select>
+          <label>Duracao (minutos)</label>
+          <input id="t-dur" type="number" placeholder="Ex: 45" min="10" max="300" />
+          <label>Foto comprobatoria</label>
+          <div class="ua" id="ua1" onclick="document.getElementById('t-foto').click()">
+            <input type="file" id="t-foto" accept="image/*" capture="environment" onchange="prevFoto(this,'ua1','fp1','ui1','ut1')">
+            <i class="ti ti-camera-plus" id="ui1"></i><p id="ut1">Toque para tirar foto ou escolher da galeria</p>
+          </div>
+          <img id="fp1" class="img-prev" />
+          <div class="prog" id="prog1"><div class="prog-f" id="prog1f"></div></div>
+          <button class="btn btn-p btn-full" onclick="registrarTreino()"><i class="ti ti-device-floppy"></i> Registrar +5 pts</button>
+        </div>
+        <div class="card">
+          <h3><i class="ti ti-heart-rate-monitor"></i> Teste Ergometrico</h3>
+          <div class="info-box">METs maior ou igual a 10 = +20 pts. Melhora entre testes = +15 pts.</div>
+          <div class="fr">
+            <div><label>METs atingidos</label><input id="t-mets" type="number" placeholder="Ex: 11.2" step="0.1" /></div>
+            <div><label>Data do teste</label><input id="t-mets-data" type="date" /></div>
+          </div>
+          <button class="btn btn-p btn-full" onclick="registrarErgo()"><i class="ti ti-device-floppy"></i> Salvar resultado</button>
+          <div id="ergo-hist" style="margin-top:10px"></div>
+        </div>
+        <div class="card"><h3><i class="ti ti-history"></i> Historico de treinos</h3><div id="treino-hist"><div class="empty">Nenhum treino ainda.</div></div></div>
+        <div class="card"><h3><i class="ti ti-star" style="color:var(--warn)"></i> Conquistas</h3><div id="conquistas-list"></div></div>
+      </div>
+
+      <div id="sec-evolucao" class="sec">
+        <div class="pts-box">
+          <div><div style="font-size:11px;color:var(--pf-d);font-weight:600;margin-bottom:2px">Meus pontos totais</div><div class="pts-v" id="meus-pts">0</div></div>
+          <div class="pts-sub">Comportamento<span id="pts-comp">0</span>Resultado<span id="pts-res">0</span></div>
+        </div>
+        <div class="g2" id="ev-metrics"></div>
+        <div class="tab-sub" id="graf-tabs">
+          <button class="active" onclick="setGraf('peso',this)">Peso</button>
+          <button onclick="setGraf('gm',this)">M. Gorda</button>
+          <button onclick="setGraf('mm',this)">M. Magra</button>
+          <button onclick="setGraf('ca',this)">Circ. abd.</button>
+        </div>
+        <div class="card"><h3 id="graf-titulo">Evolucao do peso (kg)</h3><div style="position:relative;width:100%;height:200px"><canvas id="graf-ev"></canvas></div></div>
+        <div class="card"><h3><i class="ti ti-list"></i> Historico de avaliacoes</h3><div id="minha-hist"></div></div>
+      </div>
+
+      <div id="sec-lab" class="sec">
+        <div class="card"><h3><i class="ti ti-flask" style="color:var(--pf)"></i> Metas laboratoriais - bonus trimestral</h3><div id="lab-metas"></div></div>
+        <div class="card">
+          <h3><i class="ti ti-upload"></i> Enviar laudo</h3>
+          <label>Marcador</label>
+          <select id="lab-tipo"><option value="">Selecione...</option><option value="ldl">LDL colesterol</option><option value="tgl">Triglicerideos</option><option value="hba1c">HbA1c</option></select>
+          <label>Valor atual</label>
+          <input id="lab-valor" type="number" placeholder="Ex: 118" step="0.1" />
+          <label>Foto do laudo</label>
+          <div class="ua" id="ua2" onclick="document.getElementById('lab-foto').click()">
+            <input type="file" id="lab-foto" accept="image/*" onchange="prevFoto(this,'ua2','fp2','ui2','ut2')">
+            <i class="ti ti-file-certificate" id="ui2"></i><p id="ut2">Toque para anexar foto do laudo</p>
+          </div>
+          <img id="fp2" class="img-prev" />
+          <div class="prog" id="prog2"><div class="prog-f" id="prog2f"></div></div>
+          <button class="btn btn-p btn-full" onclick="enviarLaudo()"><i class="ti ti-send"></i> Enviar laudo</button>
+        </div>
+        <div class="card"><h3><i class="ti ti-history"></i> Laudos enviados</h3><div id="lab-hist"><div class="empty">Nenhum laudo ainda.</div></div></div>
+      </div>
+
+      <div id="sec-pontos" class="sec">
+        <div class="card"><h3><i class="ti ti-run"></i> Atividade fisica</h3>
+          <div class="pts-tr"><span>Treino registrado (com foto)</span><span class="p">+5 pts</span></div>
+          <div class="pts-tr"><span>Maximo semanal (4 treinos)</span><span class="p">20 pts/sem</span></div>
+          <div class="pts-tr"><span>Teste ergometrico maior ou igual a 10 METs</span><span class="p">+20 pts</span></div>
+          <div class="pts-tr"><span>Melhora de METs entre testes</span><span class="p">+15 pts</span></div>
+          <div class="pts-tr"><span>Manutencao METs maior que 10</span><span class="p">+10 pts</span></div>
+        </div>
+        <div class="card"><h3><i class="ti ti-chart-line"></i> Composicao corporal</h3>
+          <div class="pts-tr"><span>Perda de massa gorda maior ou igual a 0,5 kg</span><span class="p">+15 pts</span></div>
+          <div class="pts-tr"><span>Ganho de massa magra maior ou igual a 0,5 kg</span><span class="p">+15 pts</span></div>
+          <div class="pts-tr"><span>Reducao de CA maior ou igual a 1 cm</span><span class="p">+15 pts</span></div>
+          <div class="pts-tr"><span>Manutencao CA menos de 94cm (H) / 80cm (M)</span><span class="p">+15 pts</span></div>
+          <div class="pts-tr"><span>Manutencao gordura menos de 20% (H) / 28% (M)</span><span class="p">+15 pts</span></div>
+        </div>
+        <div class="card"><h3><i class="ti ti-flask"></i> Laboratorial (bonus trimestral)</h3>
+          <div class="pts-tr"><span>LDL menor que 130 mg/dL</span><span class="p">+20 pts</span></div>
+          <div class="pts-tr"><span>LDL menor que 100 mg/dL (bonus extra)</span><span class="p">+10 pts</span></div>
+          <div class="pts-tr"><span>Triglicerideos menor que 150 mg/dL</span><span class="p">+15 pts</span></div>
+          <div class="pts-tr"><span>HbA1c menor que 6,0% ou reducao maior ou igual a 0,3%</span><span class="p">+25 pts</span></div>
+          <div class="pts-tr"><span>Envio de laudo (por laudo)</span><span class="p">+10 pts</span></div>
+        </div>
+        <div class="card"><h3><i class="ti ti-clipboard-check"></i> Engajamento</h3>
+          <div class="pts-tr"><span>Avaliacao periodica realizada</span><span class="p">+10 pts</span></div>
+          <div class="pts-tr"><span>1 treino registrado</span><span class="p">+5 pts</span></div>
+          <div class="pts-tr"><span>10 treinos acumulados</span><span class="p">+10 pts</span></div>
+          <div class="pts-tr"><span>30 treinos acumulados</span><span class="p">+20 pts</span></div>
+        </div>
+        <div class="card" style="background:var(--pf-l)">
+          <h3 style="color:var(--pf-d)"><i class="ti ti-info-circle"></i> Ranking dos times</h3>
+          <p style="font-size:12px;color:var(--pf-d);line-height:1.6">A pontuacao do time e a <b>media individual</b> dos membros. Times menores competem em igualdade. Cada treino, laudo e avaliacao conta para o seu time!</p>
+        </div>
+      </div>
+
+      <div id="sec-risco" class="sec">
+        <div class="info-box"><b>Escore de Risco Global - SBC 2019</b><br>Estima a probabilidade de eventos cardiovasculares nos proximos 10 anos. Nao pontuavel - serve como ferramenta de autoconhecimento.</div>
+        <div id="risco-result"></div>
+        <div class="card">
+          <h3><i class="ti ti-calculator"></i> Calcular risco</h3>
+          <div class="fr">
+            <div><label>PAS (mmHg)</label><input id="r-pas" type="number" placeholder="130" /></div>
+            <div><label>LDL atual (mg/dL)</label><input id="r-ldl" type="number" placeholder="130" /></div>
+          </div>
+          <div class="fr">
+            <div><label>Tabagista?</label><select id="r-tabag"><option value="0">Nao</option><option value="1">Sim</option></select></div>
+            <div><label>Diabetes?</label><select id="r-dm"><option value="0">Nao</option><option value="1">Sim</option></select></div>
+          </div>
+          <button class="btn btn-p btn-full" onclick="calcularRisco()"><i class="ti ti-calculator"></i> Calcular</button>
+        </div>
+        <div class="card"><h3><i class="ti ti-info-circle"></i> O que significa meu risco?</h3>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7">
+            <div style="margin-bottom:6px"><span class="badge bs">Baixo menos de 5%</span> Risco pequeno. Mantenha os habitos saudaveis.</div>
+            <div style="margin-bottom:6px"><span class="badge bw">Moderado 5-10%</span> Mudancas de estilo de vida sao muito eficazes.</div>
+            <div style="margin-bottom:6px"><span class="badge" style="background:var(--err-l);color:var(--err)">Alto 10-20%</span> Avaliacao medica e possivel medicacao indicadas.</div>
+            <div><span class="badge" style="background:#F5E6FF;color:#6B21A8">Muito alto mais de 20%</span> Tratamento medico necessario.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="sec-participantes" class="sec">
+        <div class="card"><h3><i class="ti ti-users"></i> Participantes</h3><div id="lista-p"><div class="empty">Nenhum participante.</div></div></div>
+      </div>
+
+      <div id="sec-avaliacoes" class="sec">
+        <div class="card">
+          <h3><i class="ti ti-clipboard-list"></i> Registrar avaliacao</h3>
+          <div class="fr">
+            <div><label>Participante</label><select id="av-p"><option value="">Selecione...</option></select></div>
+            <div><label>Data</label><input id="av-data" type="date" /></div>
+          </div>
+          <div class="fr">
+            <div><label>Peso (kg)</label><input id="av-peso" type="number" placeholder="83.2" /></div>
+            <div><label>CA (cm)</label><input id="av-ca" type="number" placeholder="95" /></div>
+          </div>
+          <div class="fr">
+            <div><label>% Gordura</label><input id="av-gord" type="number" placeholder="27.1" step="0.1" /></div>
+            <div><label>PA</label><input id="av-pa" placeholder="120/80" /></div>
+          </div>
+          <button class="btn btn-p btn-full" onclick="registrarAv()"><i class="ti ti-device-floppy"></i> Salvar avaliacao</button>
+        </div>
+        <div class="card"><h3>Historico por participante</h3>
+          <select id="av-hs" style="margin-bottom:10px" onchange="renderHistAdmin(this.value)"><option value="">Selecione...</option></select>
+          <div id="hist-av"></div>
+        </div>
+      </div>
+
+      <div id="sec-adm" class="sec">
+        <div class="g3" id="adm-metrics"></div>
+        <div class="card"><h3><i class="ti ti-download"></i> Exportar CSV</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ok btn-sm" onclick="exportCSV('p')"><i class="ti ti-users"></i> Participantes</button>
+            <button class="btn btn-ok btn-sm" onclick="exportCSV('a')"><i class="ti ti-chart-line"></i> Avaliacoes</button>
+            <button class="btn btn-ok btn-sm" onclick="exportCSV('t')"><i class="ti ti-run"></i> Treinos</button>
+            <button class="btn btn-ok btn-sm" onclick="exportCSV('r')"><i class="ti ti-trophy"></i> Ranking</button>
+          </div>
+        </div>
+        <div class="card"><h3><i class="ti ti-lock"></i> Alterar senha admin</h3>
+          <div class="fr"><div><label>Nova senha</label><input id="adm-p1" type="password" /></div><div><label>Confirmar</label><input id="adm-p2" type="password" /></div></div>
+          <button class="btn btn-sm" onclick="alterarSenha()">Salvar</button>
+        </div>
+        <div class="card"><h3><i class="ti ti-trash"></i> Resetar ciclo</h3>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Remove treinos, avaliacoes e laudos. Mantem participantes.</p>
+          <button class="btn btn-sm" style="border-color:var(--err);color:var(--err)" onclick="resetarCiclo()">Resetar ciclo trimestral</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="foto-modal" onclick="if(event.target===this)document.getElementById('foto-modal').classList.remove('open')">
+  <div class="modal"><img id="modal-img" src="" /><button class="btn btn-full" onclick="document.getElementById('foto-modal').classList.remove('open')"><i class="ti ti-x"></i> Fechar</button></div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+import{getFirestore,collection,doc,setDoc,getDoc,getDocs,addDoc,query,where,orderBy,deleteDoc,serverTimestamp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+import{getStorage,ref,uploadBytes,getDownloadURL}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
+
+const FC={apiKey:"AIzaSyCZ5SxfuPxv25G5JBwjgdq-906AXHhWuGQ",authDomain:"operacao-saude-pf.firebaseapp.com",projectId:"operacao-saude-pf",storageBucket:"operacao-saude-pf.firebasestorage.app",messagingSenderId:"824450890759",appId:"1:824450890759:web:291f5caf0f36ef9f143ea2"};
+const app=initializeApp(FC),db=getFirestore(app),st=getStorage(app);
+const DEPTS=["DGP","APF","EPF","DELTA"];
+const LAB={ldl:{nm:"LDL",u:"mg/dL",meta:130,meta2:100,pts:20,pts2:10,desc:"Meta: <130 mg/dL - Bonus extra: <100"},tgl:{nm:"TGL",u:"mg/dL",meta:150,pts:15,desc:"Meta: <150 mg/dL"},hba1c:{nm:"HbA1c",u:"%",meta:6.0,pts:25,desc:"Meta: <6,0% ou reducao maior ou igual a 0,3%"}};
+const CQ=[{id:"c1",nm:"1 treino",ic:"ti-award",f:t=>t>=1},{id:"c2",nm:"10 treinos",ic:"ti-flame",f:t=>t>=10},{id:"c3",nm:"30 treinos",ic:"ti-medal",f:t=>t>=30},{id:"c4",nm:"1 laudo",ic:"ti-flask",f:(_,l)=>l>=1},{id:"c5",nm:"3 laudos",ic:"ti-heart-rate-monitor",f:(_,l)=>l>=3}];
+let cu=null,isAdmin=false,allP=[],gC=null,gT="peso",fF=null,lF=null,mT=null,mA=null,mL=null,mE=null;
+const T=m=>{const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2800)};
+const IN=n=>(n||"?").split(" ").slice(0,2).map(x=>x[0]).join("").toUpperCase();
+const FD=d=>{try{return new Date(d+"T12:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});}catch(e){return d||"-"}};
+const CMP=f=>new Promise(r=>{const rd=new FileReader();rd.onload=e=>{const i=new Image();i.onload=()=>{const c=document.createElement("canvas");const mx=800;let w=i.width,h=i.height;if(w>mx){h=Math.round(h*mx/w);w=mx;}c.width=w;c.height=h;c.getContext("2d").drawImage(i,0,0,w,h);c.toBlob(b=>r(b),"image/jpeg",0.65)};i.src=e.target.result};rd.readAsDataURL(f)});
+
+async function UF(f,p,pg,pf){const el=document.getElementById(pg);el.style.display="block";document.getElementById(pf).style.width="30%";const b=await CMP(f);document.getElementById(pf).style.width="60%";const rr=ref(st,p);await uploadBytes(rr,b);document.getElementById(pf).style.width="100%";const u=await getDownloadURL(rr);setTimeout(()=>el.style.display="none",500);return u;}
+
+async function loadP(){try{const s=await getDocs(collection(db,"participantes"));allP=s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){allP=[];}}
+async function loadPwd(){try{const d=await getDoc(doc(db,"config","admin"));return d.exists()?d.data().pwd:"pf2026";}catch(e){return "pf2026";}}
+
+async function getPts(pid){try{const d=await getDoc(doc(db,"pontos",pid));if(d.exists())return d.data();}catch(e){}return{total:0,comp:0,res:0};}
+async function recalc(pid){
+  const p=allP.find(x=>x.id===pid);if(!p)return{total:0,comp:0,res:0};
+  let comp=0,res=0;
+  try{const s=await getDocs(query(collection(db,"treinos"),where("pid","==",pid)));comp+=s.size*5;}catch(e){}
+  try{
+    const avs=(await getDocs(query(collection(db,"avaliacoes"),where("pid","==",pid),orderBy("data")))).docs.map(d=>d.data());
+    comp+=avs.length*10;
+    if(avs.length>=2){
+      const f=avs[0],l=avs[avs.length-1];
+      const gmF=f.peso*((f.gord||0)/100),gmL=l.peso*((l.gord||0)/100);
+      const mmF=f.peso-gmF,mmL=l.peso-gmL;
+      if((gmF-gmL)>=0.5)res+=15;
+      if((mmL-mmF)>=0.5)res+=15;
+      if((f.ca-l.ca)>=1)res+=15;
+      const caOk=p.sexo==="M"?l.ca<94:l.ca<80;if(caOk)res+=15;
+      const gOk=p.sexo==="M"?l.gord<20:l.gord<28;if(gOk&&l.gord)res+=15;
+    }
+  }catch(e){}
+  try{
+    const ls=(await getDocs(query(collection(db,"laudos"),where("pid","==",pid)))).docs.map(d=>d.data());
+    comp+=ls.length*10;
+    ls.forEach(l=>{const cfg=LAB[l.tipo];if(!cfg)return;if(l.valor<cfg.meta){res+=cfg.pts;if(cfg.meta2&&l.valor<cfg.meta2)res+=(cfg.pts2||0);}else if(l.tipo==="hba1c"&&p.hba1c&&(p.hba1c-l.valor)>=0.3)res+=cfg.pts;});
+  }catch(e){}
+  try{
+    const es=(await getDocs(query(collection(db,"ergometrico"),where("pid","==",pid),orderBy("data")))).docs.map(d=>d.data());
+    if(es.length>0){const last=es[es.length-1];if(last.mets>=10)res+=20;if(es.length>=2){const prev=es[es.length-2];if(last.mets>prev.mets)res+=15;if(last.mets>=10)res+=10;}}
+  }catch(e){}
+  const r={total:comp+res,comp,res};
+  try{await setDoc(doc(db,"pontos",pid),r);}catch(e){}
+  return r;
+}
+
+window.showTab=id=>{
+  document.getElementById("auth-login").style.display=id==="login"?"block":"none";
+  document.getElementById("auth-cadastro").style.display=id==="cadastro"?"block":"none";
+  document.querySelectorAll(".auth-tab").forEach((t,i)=>t.classList.toggle("active",i===(id==="login"?0:1)));
+};
+window.prevFoto=(input,aId,pId,iId,tId)=>{
+  const f=input.files[0];if(!f)return;
+  if(aId==="ua1")fF=f;else lF=f;
+  const r=new FileReader();r.onload=e=>{const p=document.getElementById(pId);p.src=e.target.result;p.style.display="block";};r.readAsDataURL(f);
+  document.getElementById(aId).classList.add("has");
+  document.getElementById(iId).className="ti ti-check";
+  document.getElementById(tId).textContent="Foto selecionada";
+};
+window.doLogin=async()=>{
+  const mat=document.getElementById("login-mat").value.trim(),pwd=document.getElementById("login-pwd").value;
+  if(!mat||!pwd){T("Preencha matricula e senha.");return;}
+  const ap=await loadPwd();
+  if(mat==="admin"&&pwd===ap){isAdmin=true;cu={nome:"Administrador",dept:"PF",id:"admin",mat:"admin"};enterApp();return;}
+  const p=allP.find(x=>x.mat===mat&&x.pwd===pwd);
+  if(p){isAdmin=false;cu=p;enterApp();}else T("Matricula ou senha incorretos.");
+};
+window.doCadastro=async()=>{
+  const nome=document.getElementById("c-nome").value.trim(),mat=document.getElementById("c-mat").value.trim(),dept=document.getElementById("c-dept").value,sexo=document.getElementById("c-sexo").value;
+  const idade=parseInt(document.getElementById("c-idade").value)||null,altura=parseFloat(document.getElementById("c-altura").value),peso=parseFloat(document.getElementById("c-peso").value),ca=parseFloat(document.getElementById("c-ca").value);
+  const gord=parseFloat(document.getElementById("c-gord").value)||null,pas=parseFloat(document.getElementById("c-pas").value)||null,ldl=parseFloat(document.getElementById("c-ldl").value)||null,tgl=parseFloat(document.getElementById("c-tgl").value)||null;
+  const hba1c=parseFloat(document.getElementById("c-hba1c").value)||null,tabag=parseInt(document.getElementById("c-tabag").value)||0,dm=parseInt(document.getElementById("c-dm").value)||0,pwd=document.getElementById("c-pwd").value;
+  if(!nome||!mat||!dept||!sexo||!altura||!peso||!ca||!pwd){T("Preencha os campos obrigatorios.");return;}
+  if(allP.find(p=>p.mat===mat)){T("Matricula ja cadastrada.");return;}
+  if(pwd.length<4){T("Senha deve ter ao menos 4 caracteres.");return;}
+  try{
+    const r=await addDoc(collection(db,"participantes"),{nome,mat,dept,sexo,idade,altura,peso,ca,gord,pas,ldl,tgl,hba1c,tabag,dm,pwd,ts:serverTimestamp()});
+    const np={id:r.id,nome,mat,dept,sexo,idade,altura,peso,ca,gord,pas,ldl,tgl,hba1c,tabag,dm,pwd};
+    allP.push(np);isAdmin=false;cu=np;T("Bem-vindo, "+nome.split(" ")[0]+"!");enterApp();
+  }catch(e){T("Erro ao cadastrar.");}
+};
+function enterApp(){
+  document.getElementById("auth-screen").style.display="none";
+  document.getElementById("main-app").style.display="block";
+  document.getElementById("tb-user").textContent=isAdmin?"Administrador":cu.nome.split(" ")[0]+" - "+cu.dept;
+  if(!isAdmin)document.getElementById("tb-pts").style.display="block";
+  if(isAdmin)document.querySelectorAll(".admin-only").forEach(e=>e.style.display="flex");
+  renderRanking();switchTab("ranking");
+}
+window.logout=()=>{
+  cu=null;isAdmin=false;mT=mA=mL=mE=null;
+  document.getElementById("auth-screen").style.display="flex";
+  document.getElementById("main-app").style.display="none";
+  document.querySelectorAll(".admin-only").forEach(e=>e.style.display="none");
+  document.getElementById("login-mat").value="";document.getElementById("login-pwd").value="";
+  document.getElementById("tb-pts").style.display="none";
+  if(gC){gC.destroy();gC=null;}
+};
+window.switchTab=id=>{
+  document.querySelectorAll(".tab").forEach((t,i)=>{const ids=["ranking","treino","evolucao","lab","pontos","risco","participantes","avaliacoes","adm"];t.classList.toggle("active",ids[i]===id);});
+  document.querySelectorAll(".sec").forEach(s=>s.classList.remove("active"));
+  document.getElementById("sec-"+id).classList.add("active");
+  if(id==="ranking")renderRanking();
+  if(id==="treino")renderTreino();
+  if(id==="evolucao")renderEvolucao();
+  if(id==="lab")renderLab();
+  if(id==="risco")renderRisco();
+  if(id==="participantes")renderParticipantes();
+  if(id==="avaliacoes")popAvSel();
+  if(id==="adm")renderAdm();
+};
+async function renderRanking(){
+  const pA=await Promise.all(allP.map(async p=>({p,r:await getPts(p.id)})));
+  const d={};DEPTS.forEach(x=>d[x]={nm:x,pts:0,count:0});
+  pA.forEach(({p,r})=>{if(d[p.dept]){d[p.dept].pts+=r.total;d[p.dept].count++;}});
+  const s=Object.values(d).filter(x=>x.count>0).map(x=>({...x,media:Math.round(x.pts/x.count)})).sort((a,b)=>b.media-a.media);
+  document.getElementById("rank-metrics").innerHTML=`<div class="mc"><div class="v">${allP.length}</div><div class="l">Participantes</div></div><div class="mc"><div class="v">${s[0]?s[0].nm:"-"}</div><div class="l">Lider atual</div></div>`;
+  const mx=s[0]?.media||1;
+  document.getElementById("ranking-list").innerHTML=s.length?s.map((x,i)=>`<div class="ri"><div class="rn ${i===0?"r1":i===1?"r2":i===2?"r3":"rnn"}">${i+1}</div><div class="rii"><div class="nm">${x.nm}</div><div class="sb">${x.count} membro${x.count>1?"s":""} - soma ${x.pts} pts</div><div class="pb"><div class="pbf" style="width:${Math.round((x.media/mx)*100)}%"></div></div></div><div class="rpts">${x.media}<span style="font-size:9px;font-weight:400"> pts/pessoa</span></div></div>`).join(""):"<div class='empty'>Nenhum participante ainda.</div>";
+  const top=pA.sort((a,b)=>b.r.total-a.r.total).slice(0,3);
+  document.getElementById("destaques-list").innerHTML=top.length?top.map(({p,r},i)=>`<div class="prow"><div class="rn ${i===0?"r1":i===1?"r2":"r3"}">${i+1}</div><div class="av">${IN(p.nome)}</div><div class="pi"><div class="pn">${p.nome}</div><div class="pd">${p.dept}</div></div><span class="badge bi">${r.total} pts</span></div>`).join(""):"<div class='empty'>Nenhum dado ainda.</div>";
+}
+async function getMyData(){
+  if(!cu||isAdmin)return;
+  if(!mT)try{const s=await getDocs(query(collection(db,"treinos"),where("pid","==",cu.id),orderBy("data","desc")));mT=s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){mT=[];}
+  if(!mA)try{const s=await getDocs(query(collection(db,"avaliacoes"),where("pid","==",cu.id),orderBy("data")));mA=s.docs.map(d=>d.data());}catch(e){mA=[];}
+  if(!mL)try{const s=await getDocs(query(collection(db,"laudos"),where("pid","==",cu.id),orderBy("data","desc")));mL=s.docs.map(d=>d.data());}catch(e){mL=[];}
+  if(!mE)try{const s=await getDocs(query(collection(db,"ergometrico"),where("pid","==",cu.id),orderBy("data")));mE=s.docs.map(d=>d.data());}catch(e){mE=[];}
+}
+async function renderTreino(){
+  if(!cu||isAdmin)return;await getMyData();
+  const hoje=new Date(),dom=new Date(hoje);dom.setDate(hoje.getDate()-hoje.getDay());
+  const domS=dom.toISOString().split("T")[0];
+  document.getElementById("streak-n").textContent=(mT||[]).filter(t=>t.data>=domS).length;
+  const pts=await recalc(cu.id);document.getElementById("tb-pts").textContent=pts.total+" pts";
+  document.getElementById("conquistas-list").innerHTML=CQ.map(c=>{const ok=c.f((mT||[]).length,(mL||[]).length);return `<span class="cq-item ${ok?"cq-ok":"cq-no"}"><i class="ti ${c.ic}"></i> ${c.nm}</span>`;}).join("");
+  document.getElementById("ergo-hist").innerHTML=(mE||[]).length?(mE||[]).map(e=>`<div class="prow"><div class="pi"><div class="pn">${e.mets} METs</div><div class="pd">${FD(e.data)}</div></div><span class="badge ${e.mets>=10?"bs":"bw"}">${e.mets>=10?"Meta":"Abaixo da meta"}</span></div>`).join(""):"<div class='empty' style='padding:10px'>Nenhum teste registrado.</div>";
+  document.getElementById("treino-hist").innerHTML=(mT||[]).length?(mT||[]).slice(0,10).map(t=>`<div class="th-item">${t.fotoUrl?`<img class="th-thumb" src="${t.fotoUrl}" onclick="document.getElementById('modal-img').src='${t.fotoUrl}';document.getElementById('foto-modal').classList.add('open')" />`:`<div class="th-thumb"><i class="ti ti-run"></i></div>`}<div class="th-info"><div class="th-d">${FD(t.data)} - ${t.tipo}</div><div class="th-t">${t.duracao} min</div></div><span class="badge bs">+5 pts</span></div>`).join(""):"<div class='empty'>Nenhum treino ainda.</div>";
+}
+window.registrarTreino=async()=>{
+  if(!cu||isAdmin){T("Faca login como participante.");return;}
+  const tipo=document.getElementById("t-tipo").value,dur=document.getElementById("t-dur").value;
+  if(!tipo||!dur){T("Preencha tipo e duracao.");return;}
+  const hoje=new Date(),dom=new Date(hoje);dom.setDate(hoje.getDate()-hoje.getDay());
+  if((mT||[]).filter(t=>t.data>=dom.toISOString().split("T")[0]).length>=4){T("Limite de 4 treinos por semana.");return;}
+  let fotoUrl="";
+  if(fF){try{fotoUrl=await UF(fF,`treinos/${cu.id}/${Date.now()}.jpg`,"prog1","prog1f");}catch(e){T("Erro no upload.");}}
+  try{
+    await addDoc(collection(db,"treinos"),{pid:cu.id,dept:cu.dept,tipo,duracao:parseInt(dur),fotoUrl,data:new Date().toISOString().split("T")[0],ts:serverTimestamp()});
+    mT=null;T("Treino registrado! +5 pts");fF=null;
+    document.getElementById("t-tipo").value="";document.getElementById("t-dur").value="";
+    document.getElementById("fp1").style.display="none";document.getElementById("ua1").classList.remove("has");
+    document.getElementById("ui1").className="ti ti-camera-plus";document.getElementById("ut1").textContent="Toque para tirar foto ou escolher da galeria";
+    await recalc(cu.id);renderTreino();renderRanking();
+  }catch(e){T("Erro ao salvar.");}
+};
+window.registrarErgo=async()=>{
+  if(!cu||isAdmin)return;
+  const mets=parseFloat(document.getElementById("t-mets").value),data=document.getElementById("t-mets-data").value;
+  if(!mets||!data){T("Preencha METs e data.");return;}
+  try{
+    await addDoc(collection(db,"ergometrico"),{pid:cu.id,dept:cu.dept,mets,data,ts:serverTimestamp()});
+    mE=null;T(`Registrado! ${mets>=10?"+20 pts (METs maior ou igual a 10)":"Abaixo de 10 METs"}`);
+    document.getElementById("t-mets").value="";
+    await recalc(cu.id);renderTreino();renderRanking();
+  }catch(e){T("Erro ao salvar.");}
+};
+async function renderEvolucao(){
+  if(!cu||isAdmin)return;await getMyData();
+  const p=allP.find(x=>x.id===cu.id);if(!p)return;
+  const pts=await recalc(cu.id);
+  document.getElementById("meus-pts").textContent=pts.total;
+  document.getElementById("pts-comp").textContent=pts.comp;
+  document.getElementById("pts-res").textContent=pts.res;
+  document.getElementById("tb-pts").textContent=pts.total+" pts";
+  const avs=mA||[],last=avs.length?avs[avs.length-1]:null;
+  const gmB=p.peso*((p.gord||0)/100),mmB=p.peso-gmB;
+  const gmL=last?last.peso*((last.gord||0)/100):null,mmL=last?last.peso-gmL:null;
+  document.getElementById("ev-metrics").innerHTML=`<div class="mc"><div class="v" style="color:${gmL!==null&&(gmB-gmL)>0?"var(--ok)":"var(--text)"}">${gmL!==null?(gmB-gmL>=0?"-":"+")+(Math.abs(gmB-gmL).toFixed(1))+" kg":gmB.toFixed(1)+" kg"}</div><div class="l">Massa gorda</div></div><div class="mc"><div class="v" style="color:${mmL!==null&&(mmL-mmB)>0?"var(--ok)":"var(--text)"}">${mmL!==null?((mmL-mmB)>=0?"+":"-")+(Math.abs(mmL-mmB).toFixed(1))+" kg":mmB.toFixed(1)+" kg"}</div><div class="l">Massa magra</div></div>`;
+  renderGrafico(p,avs);
+  document.getElementById("minha-hist").innerHTML=avs.length?`<div class="etw"><table class="et"><thead><tr><th>Data</th><th>Peso</th><th>M.Gorda</th><th>M.Magra</th><th>CA</th><th>PA</th></tr></thead><tbody>${avs.map((a,i)=>{const gm=(a.peso*((a.gord||0)/100)).toFixed(1),mm=(a.peso-(a.peso*((a.gord||0)/100))).toFixed(1);const prev=i>0?avs[i-1]:p;const dp=(a.peso-prev.peso).toFixed(1);return `<tr><td>${FD(a.data)}</td><td class="${parseFloat(dp)<0?"dp":"dn"}">${a.peso}kg</td><td>${gm}kg</td><td>${mm}kg</td><td>${a.ca}cm</td><td>${a.pa||"-"}</td></tr>`;}).join("")}</tbody></table></div>`:"<div class='empty'>Nenhuma avaliacao registrada.</div>";
+}
+function renderGrafico(p,avs){
+  const labels=["Basal",...avs.map(a=>FD(a.data))];
+  let data;
+  if(gT==="peso")data=[p.peso,...avs.map(a=>a.peso)];
+  else if(gT==="gm")data=[p.peso*((p.gord||0)/100),...avs.map(a=>a.peso*((a.gord||0)/100))];
+  else if(gT==="mm")data=[p.peso*(1-(p.gord||0)/100),...avs.map(a=>a.peso*(1-(a.gord||0)/100))];
+  else data=[p.ca,...avs.map(a=>a.ca)];
+  data=data.map(v=>v!=null?parseFloat(v.toFixed(1)):null);
+  if(gC)gC.destroy();
+  gC=new Chart(document.getElementById("graf-ev"),{type:"line",data:{labels,datasets:[{data,borderColor:"#185FA5",backgroundColor:"rgba(24,95,165,.08)",fill:true,tension:.35,pointRadius:5,pointBackgroundColor:"#185FA5"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{font:{size:11}}}}}});
+}
+window.setGraf=(tipo,btn)=>{gT=tipo;document.querySelectorAll("#graf-tabs button").forEach(b=>b.classList.remove("active"));btn.classList.add("active");const t={peso:"Evolucao do peso (kg)",gm:"Massa gorda (kg)",mm:"Massa magra (kg)",ca:"Circunferencia abdominal (cm)"};document.getElementById("graf-titulo").textContent=t[tipo];renderEvolucao();};
+async function renderLab(){
+  if(!cu||isAdmin)return;await getMyData();
+  const p=allP.find(x=>x.id===cu.id)||{},laudos=mL||[];
+  document.getElementById("lab-metas").innerHTML=Object.entries(LAB).map(([k,cfg])=>{const ul=laudos.find(l=>l.tipo===k);const ok=ul&&ul.valor<cfg.meta;const ex=cfg.meta2&&ul&&ul.valor<cfg.meta2;return `<div class="lab-item" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:12px;font-weight:500">${cfg.nm}</div><div style="font-size:10px;color:var(--text3)">${cfg.desc}</div></div><div style="text-align:right">${ul?`<div style="font-size:13px;font-weight:600;color:${ok?"var(--ok)":"var(--warn)"}">${ul.valor} ${cfg.u}</div>`:`<div style="font-size:11px;color:var(--text3)">${p[k]?"Basal: "+p[k]+" "+cfg.u:"Sem dados"}</div>`}${ok?`<span class="badge bs">+${cfg.pts}${ex?"+"+cfg.pts2:""} pts</span>`:""}</div></div>`;}).join("");
+  document.getElementById("lab-hist").innerHTML=laudos.length?laudos.map(l=>`<div class="th-item">${l.fotoUrl?`<img class="th-thumb" src="${l.fotoUrl}" onclick="document.getElementById('modal-img').src='${l.fotoUrl}';document.getElementById('foto-modal').classList.add('open')" />`:`<div class="th-thumb"><i class="ti ti-flask"></i></div>`}<div class="th-info"><div class="th-d">${LAB[l.tipo]?.nm||l.tipo} - ${l.valor} ${LAB[l.tipo]?.u||""}</div><div class="th-t">${FD(l.data)}</div></div>${l.valor<(LAB[l.tipo]?.meta||999)?'<span class="badge bs">Meta</span>':'<span class="badge bw">Em prog.</span>'}</div>`).join(""):"<div class='empty'>Nenhum laudo ainda.</div>";
+}
+window.enviarLaudo=async()=>{
+  if(!cu||isAdmin)return;
+  const tipo=document.getElementById("lab-tipo").value,valor=parseFloat(document.getElementById("lab-valor").value);
+  if(!tipo||isNaN(valor)){T("Selecione marcador e valor.");return;}
+  let fotoUrl="";
+  if(lF){try{fotoUrl=await UF(lF,`laudos/${cu.id}/${Date.now()}.jpg`,"prog2","prog2f");}catch(e){T("Erro no upload.");}}
+  try{
+    await addDoc(collection(db,"laudos"),{pid:cu.id,dept:cu.dept,tipo,valor,fotoUrl,data:new Date().toISOString().split("T")[0],ts:serverTimestamp()});
+    mL=null;T("Laudo enviado!");lF=null;
+    document.getElementById("lab-tipo").value="";document.getElementById("lab-valor").value="";
+    document.getElementById("fp2").style.display="none";document.getElementById("ua2").classList.remove("has");
+    document.getElementById("ui2").className="ti ti-file-certificate";document.getElementById("ut2").textContent="Toque para anexar foto do laudo";
+    await recalc(cu.id);renderLab();renderRanking();
+  }catch(e){T("Erro ao enviar.");}
+};
+function calcERG(sexo,idade,ldl,pas,tabag,dm){
+  let pts=0;
+  if(sexo==="M"){
+    if(idade<=39)pts+=0;else if(idade<=44)pts+=3;else if(idade<=49)pts+=6;else if(idade<=54)pts+=8;else if(idade<=59)pts+=10;else if(idade<=64)pts+=11;else if(idade<=69)pts+=12;else if(idade<=74)pts+=14;else pts+=15;
+    if(ldl<130)pts+=0;else if(ldl<160)pts+=0;else if(ldl<190)pts+=1;else if(ldl<220)pts+=2;else pts+=3;
+    if(pas<120)pts-=2;else if(pas<130)pts+=0;else if(pas<140)pts+=1;else if(pas<160)pts+=2;else pts+=3;
+    if(tabag)pts+=4;if(dm)pts+=3;
+    const t={[-3]:1,[-2]:2,[-1]:2,[0]:3,[1]:4,[2]:4,[3]:5,[4]:7,[5]:8,[6]:10,[7]:12,[8]:14,[9]:16,[10]:20,[11]:25,[12]:30,[13]:35,[14]:40,[15]:47};
+    return t[Math.max(-3,Math.min(15,pts))]||(pts>15?">47":">1");
+  }else{
+    if(idade<=39)pts+=0;else if(idade<=44)pts+=3;else if(idade<=49)pts+=6;else if(idade<=54)pts+=8;else if(idade<=59)pts+=10;else if(idade<=64)pts+=11;else if(idade<=69)pts+=12;else if(idade<=74)pts+=14;else pts+=16;
+    if(ldl<130)pts-=3;else if(ldl<160)pts+=0;else if(ldl<190)pts+=1;else if(ldl<220)pts+=2;else pts+=3;
+    if(pas<120)pts-=3;else if(pas<130)pts+=0;else if(pas<140)pts+=2;else if(pas<160)pts+=4;else pts+=5;
+    if(tabag)pts+=3;if(dm)pts+=4;
+    const t={[-2]:1,[-1]:1,[0]:1,[1]:1,[2]:1,[3]:2,[4]:2,[5]:3,[6]:3,[7]:4,[8]:5,[9]:6,[10]:7,[11]:8,[12]:10,[13]:12,[14]:14,[15]:17,[16]:20,[17]:24,[18]:27,[19]:32};
+    return t[Math.max(-2,Math.min(19,pts))]||(pts>19?">32":"<1");
+  }
+}
+function renderRisco(){
+  if(!cu||isAdmin)return;
+  const p=allP.find(x=>x.id===cu.id);if(!p)return;
+  if(p.pas)document.getElementById("r-pas").value=p.pas;
+  if(p.ldl)document.getElementById("r-ldl").value=p.ldl;
+  document.getElementById("r-tabag").value=p.tabag||0;
+  document.getElementById("r-dm").value=p.dm||0;
+  if(p.ldl&&p.pas&&p.idade&&p.sexo)calcularRisco();
+  else document.getElementById("risco-result").innerHTML="<div class='empty'>Preencha os dados abaixo para calcular.</div>";
+}
+window.calcularRisco=()=>{
+  const p=allP.find(x=>x.id===cu?.id);if(!p)return;
+  const pas=parseFloat(document.getElementById("r-pas").value)||p.pas,ldl=parseFloat(document.getElementById("r-ldl").value)||p.ldl;
+  const tabag=parseInt(document.getElementById("r-tabag").value)||0,dm=parseInt(document.getElementById("r-dm").value)||0;
+  if(!p.idade||!p.sexo||!ldl||!pas){T("Dados insuficientes. Complete o cadastro com idade, sexo, LDL e pressao arterial.");return;}
+  const risco=calcERG(p.sexo,p.idade,ldl,pas,tabag,dm);
+  const r=typeof risco==="number"?risco:parseInt(String(risco).replace(/[^0-9]/g,""))||0;
+  let cls,label,desc;
+  if(r<5){cls="risco-baixo";label="Risco Baixo";desc="Probabilidade menor que 5% de eventos cardiovasculares em 10 anos.";}
+  else if(r<10){cls="risco-moderado";label="Risco Moderado";desc="Probabilidade 5-10% em 10 anos. Mudancas de estilo de vida tem grande impacto.";}
+  else if(r<20){cls="risco-alto";label="Risco Alto";desc="Probabilidade 10-20% em 10 anos. Avaliacao medica e possivel tratamento indicados.";}
+  else{cls="risco-muito-alto";label="Risco Muito Alto";desc="Probabilidade maior que 20% em 10 anos. Tratamento medico necessario.";}
+  document.getElementById("risco-result").innerHTML=`<div class="risco-card ${cls}"><div class="risco-pct">${risco}%</div><div class="risco-label">${label}</div><div class="risco-desc">${desc}</div></div><div class="card" style="font-size:11px;color:var(--text2);line-height:1.6"><b>Dados:</b> ${p.sexo==="M"?"Masculino":"Feminino"} - ${p.idade} anos - LDL ${ldl} mg/dL - PAS ${pas} mmHg - ${tabag?"Tabagista":"Nao tabagista"} - ${dm?"Diabetico":"Sem diabetes"}<br><span style="color:var(--text3);margin-top:4px;display:block">Escore de Risco Global SBC 2019. Nao substitui avaliacao medica.</span></div>`;
+};
+async function renderParticipantes(){
+  const el=document.getElementById("lista-p");if(!el)return;
+  el.innerHTML=allP.length?allP.map(p=>`<div class="prow"><div class="av">${IN(p.nome)}</div><div class="pi"><div class="pn">${p.nome}</div><div class="pd">${p.dept} - Mat. ${p.mat}</div></div><button class="btn btn-sm" style="color:var(--err);border-color:var(--err-l)" onclick="removerP('${p.id}')"><i class="ti ti-trash"></i></button></div>`).join(""):"<div class='empty'>Nenhum participante.</div>";
+}
+window.removerP=async(pid)=>{
+  if(!confirm("Remover participante e todos os dados?"))return;
+  try{await deleteDoc(doc(db,"participantes",pid));allP=allP.filter(p=>p.id!==pid);renderParticipantes();renderRanking();T("Removido.");}catch(e){T("Erro ao remover.");}
+};
+function popAvSel(){
+  const s=document.getElementById("av-p");s.innerHTML="<option value=''>Selecione...</option>"+allP.map(p=>`<option value="${p.id}">${p.nome} (${p.dept})</option>`).join("");
+  const s2=document.getElementById("av-hs");s2.innerHTML="<option value=''>Selecione...</option>"+allP.map(p=>`<option value="${p.id}">${p.nome}</option>`).join("");
+}
+window.registrarAv=async()=>{
+  const pid=document.getElementById("av-p").value,data=document.getElementById("av-data").value,peso=parseFloat(document.getElementById("av-peso").value),ca=parseFloat(document.getElementById("av-ca").value);
+  const gord=parseFloat(document.getElementById("av-gord").value)||null,pa=document.getElementById("av-pa").value.trim();
+  if(!pid||!data||!peso||!ca){T("Preencha os campos obrigatorios.");return;}
+  try{
+    await addDoc(collection(db,"avaliacoes"),{pid,data,peso,ca,gord,pa,ts:serverTimestamp()});
+    if(pid===cu?.id)mA=null;T("Avaliacao registrada!");
+    ["av-peso","av-ca","av-gord","av-pa"].forEach(f=>document.getElementById(f).value="");
+    await recalc(pid);renderRanking();
+  }catch(e){T("Erro ao salvar.");}
+};
+window.renderHistAdmin=async(pid)=>{
+  const el=document.getElementById("hist-av");if(!pid){el.innerHTML="";return;}
+  const p=allP.find(x=>x.id===pid);if(!p)return;
+  let avs=[];try{const s=await getDocs(query(collection(db,"avaliacoes"),where("pid","==",pid),orderBy("data")));avs=s.docs.map(d=>d.data());}catch(e){}
+  el.innerHTML=avs.length?`<div class="etw"><table class="et"><thead><tr><th>Data</th><th>Peso</th><th>M.Gorda</th><th>M.Magra</th><th>CA</th><th>PA</th></tr></thead><tbody>${avs.map(a=>{const gm=(a.peso*((a.gord||0)/100)).toFixed(1),mm=(a.peso-(a.peso*((a.gord||0)/100))).toFixed(1);return `<tr><td>${FD(a.data)}</td><td>${a.peso}kg</td><td>${gm}kg</td><td>${mm}kg</td><td>${a.ca}cm</td><td>${a.pa||"-"}</td></tr>`;}).join("")}</tbody></table></div>`:"<div class='empty'>Nenhuma avaliacao.</div>";
+};
+async function renderAdm(){
+  let nt=0,nl=0;
+  try{const s=await getDocs(collection(db,"treinos"));nt=s.size;}catch(e){}
+  try{const s=await getDocs(collection(db,"laudos"));nl=s.size;}catch(e){}
+  document.getElementById("adm-metrics").innerHTML=`<div class="mc"><div class="v">${allP.length}</div><div class="l">Participantes</div></div><div class="mc"><div class="v">${nt}</div><div class="l">Treinos</div></div><div class="mc"><div class="v">${nl}</div><div class="l">Laudos</div></div>`;
+}
+window.alterarSenha=async()=>{
+  const p1=document.getElementById("adm-p1").value,p2=document.getElementById("adm-p2").value;
+  if(!p1||p1!==p2){T("Senhas nao coincidem.");return;}
+  try{await setDoc(doc(db,"config","admin"),{pwd:p1});T("Senha alterada!");document.getElementById("adm-p1").value="";document.getElementById("adm-p2").value="";}catch(e){T("Erro.");}
+};
+window.resetarCiclo=async()=>{
+  if(!confirm("Remover treinos, avaliacoes e laudos?"))return;
+  try{for(const c of["treinos","avaliacoes","laudos","ergometrico","pontos"]){const s=await getDocs(collection(db,c));for(const d of s.docs)await deleteDoc(d.ref);}T("Ciclo resetado.");renderRanking();renderAdm();}catch(e){T("Erro.");}
+};
+window.exportCSV=async(tipo)=>{
+  let rows=[],fn="";
+  if(tipo==="p"){fn="participantes.csv";rows=[["Nome","Matricula","Dept","Sexo","Idade","Altura","Peso","CA","Gord%","LDL","TGL","HbA1c","Tabag","DM"]];allP.forEach(p=>rows.push([p.nome,p.mat,p.dept,p.sexo,p.idade||"",p.altura,p.peso,p.ca,p.gord||"",p.ldl||"",p.tgl||"",p.hba1c||"",p.tabag?"Sim":"Nao",p.dm?"Sim":"Nao"]));}
+  else if(tipo==="a"){fn="avaliacoes.csv";rows=[["Nome","Dept","Data","Peso","CA","Gord%","PA"]];const s=await getDocs(query(collection(db,"avaliacoes"),orderBy("data"))).catch(()=>({docs:[]}));s.docs.forEach(d=>{const a=d.data(),p=allP.find(x=>x.id===a.pid)||{};rows.push([p.nome||"",p.dept||"",a.data,a.peso,a.ca,a.gord||"",a.pa||""])});}
+  else if(tipo==="t"){fn="treinos.csv";rows=[["Nome","Dept","Data","Tipo","Duracao"]];const s=await getDocs(query(collection(db,"treinos"),orderBy("data","desc"))).catch(()=>({docs:[]}));s.docs.forEach(d=>{const t=d.data(),p=allP.find(x=>x.id===t.pid)||{};rows.push([p.nome||"",p.dept||"",t.data,t.tipo,t.duracao])});}
+  else{fn="ranking.csv";rows=[["Posicao","Departamento","Membros","Pts medios"]];const pA=await Promise.all(allP.map(async p=>({p,r:await getPts(p.id)})));const d={};DEPTS.forEach(x=>d[x]={nm:x,pts:0,count:0});pA.forEach(({p,r})=>{if(d[p.dept]){d[p.dept].pts+=r.total;d[p.dept].count++;}});Object.values(d).filter(x=>x.count>0).map(x=>({...x,media:Math.round(x.pts/x.count)})).sort((a,b)=>b.media-a.media).forEach((x,i)=>rows.push([i+1,x.nm,x.count,x.media]));}
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\n");
+  const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=fn;a.click();URL.revokeObjectURL(url);T("CSV exportado: "+fn);
+};
+(async()=>{
+  await loadP();
+  document.getElementById("auth-screen").style.display="flex";
+  document.getElementById("av-data").value=new Date().toISOString().split("T")[0];
+  document.getElementById("t-mets-data").value=new Date().toISOString().split("T")[0];
+})();
+</script>
+</body>
+</html>
