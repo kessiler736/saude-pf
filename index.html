@@ -551,7 +551,7 @@ window.registrarTreino=async()=>{
   if(fF){try{fotoUrl=await UF(fF,`treinos/${cu.id}/${Date.now()}.jpg`,"prog1","prog1f");}catch(e){T("Erro no upload.");}}
   try{
     await addDoc(collection(db,"treinos"),{pid:cu.id,dept:cu.dept,tipo,duracao:parseInt(dur),fotoUrl,data:new Date().toISOString().split("T")[0],ts:serverTimestamp()});
-    mT=null;T("Treino registrado! +5 pts");fF=null;
+    mT=null;mA=null;T("Treino registrado! +5 pts");fF=null;
     document.getElementById("t-tipo").value="";document.getElementById("t-dur").value="";
     document.getElementById("fp1").style.display="none";document.getElementById("ua1").classList.remove("has");
     document.getElementById("ui1").className="ti ti-camera-plus";document.getElementById("ut1").textContent="Toque para tirar foto ou escolher da galeria";
