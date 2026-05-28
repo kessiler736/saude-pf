@@ -406,29 +406,20 @@ input:focus,select:focus{border-color:var(--pf);box-shadow:0 0 0 3px rgba(24,95,
 <div id="toast" class="toast"></div>
 
 <script>
-if(!firebase.apps.length){firebase.initializeApp({
-  apiKey:"AIzaSyCZ5SxfuPxv25G5JBwjgdq-906AXHhWuGQ",
-  authDomain:"operacao-saude-pf.firebaseapp.com",
-  projectId:"operacao-saude-pf",
-  storageBucket:"operacao-saude-pf.firebasestorage.app",
-  messagingSenderId:"824450890759",
-  appId:"1:824450890759:web:291f5caf0f36ef9f143ea2"
-})}
-var db=firebase.firestore(),st=firebase.storage();
+var db,st;
 var DEPTS=["DGP","APF","EPF","DELTA"];
-var LAB={ldl:{nm:"LDL",u:"mg/dL",meta:130,meta2:100,pts:20,pts2:10,desc:"Meta: <130 mg/dL | Bonus extra: <100"},tgl:{nm:"TGL",u:"mg/dL",meta:150,pts:15,desc:"Meta: <150 mg/dL"},hba1c:{nm:"HbA1c",u:"%",meta:6.0,pts:25,desc:"Meta: <6,0% ou reducao >= 0,3%"}};
+var LAB={ldl:{nm:"LDL",u:"mg/dL",meta:130,meta2:100,pts:20,pts2:10,desc:"Meta: <130 | Bonus: <100"},tgl:{nm:"TGL",u:"mg/dL",meta:150,pts:15,desc:"Meta: <150 mg/dL"},hba1c:{nm:"HbA1c",u:"%",meta:6.0,pts:25,desc:"Meta: <6,0% ou reducao >=0,3%"}};
 var CQ=[{nm:"1 treino",ic:"ti-award",f:function(t){return t>=1}},{nm:"10 treinos",ic:"ti-flame",f:function(t){return t>=10}},{nm:"30 treinos",ic:"ti-medal",f:function(t){return t>=30}},{nm:"1 laudo",ic:"ti-flask",f:function(t,l){return l>=1}},{nm:"3 laudos",ic:"ti-heart-rate-monitor",f:function(t,l){return l>=3}}];
 var cu=null,isAdmin=false,allP=[],gC=null,gT="peso",fF=null,lF=null,mT=null,mA=null,mL=null,mE=null,adminPwd="pf2026";
 
-function T(m,dur){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},dur||2800)}
+function T(m,d){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},d||2800)}
 function IN(n){return(n||"?").split(" ").slice(0,2).map(function(x){return x[0]}).join("").toUpperCase()}
 function FD(d){try{return new Date(d+"T12:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}catch(e){return d||"-"}}
 
 function showAuthTab(id){
   document.getElementById("auth-login").style.display=id==="login"?"block":"none";
   document.getElementById("auth-cadastro").style.display=id==="cadastro"?"block":"none";
-  var tabs=document.querySelectorAll(".auth-tab");
-  tabs[0].classList.toggle("active",id==="login");tabs[1].classList.toggle("active",id==="cadastro");
+  document.querySelectorAll(".auth-tab").forEach(function(t,i){t.classList.toggle("active",(id==="login"&&i===0)||(id==="cadastro"&&i===1))});
 }
 
 function prevFoto(input,aId,pId,iId,tId){
@@ -438,24 +429,15 @@ function prevFoto(input,aId,pId,iId,tId){
   document.getElementById(aId).classList.add("has");document.getElementById(iId).className="ti ti-check";document.getElementById(tId).textContent="Foto selecionada";
 }
 
-function compress(file,cb){
-  var r=new FileReader();r.onload=function(e){var img=new Image();img.onload=function(){var c=document.createElement("canvas");var mx=800,w=img.width,h=img.height;if(w>mx){h=Math.round(h*mx/w);w=mx}c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);c.toBlob(function(b){cb(b)},"image/jpeg",0.65)};img.src=e.target.result};r.readAsDataURL(file)
-}
+function compress(file,cb){var r=new FileReader();r.onload=function(e){var img=new Image();img.onload=function(){var c=document.createElement("canvas");var mx=800,w=img.width,h=img.height;if(w>mx){h=Math.round(h*mx/w);w=mx}c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);c.toBlob(function(b){cb(b)},"image/jpeg",0.65)};img.src=e.target.result};r.readAsDataURL(file)}
 
 function uploadFoto(file,path,pId,pfId,cb){
   var prog=document.getElementById(pId);prog.style.display="block";document.getElementById(pfId).style.width="30%";
-  compress(file,function(blob){
-    document.getElementById(pfId).style.width="60%";
-    st.ref(path).put(blob).then(function(snap){
-      document.getElementById(pfId).style.width="100%";
-      snap.ref.getDownloadURL().then(function(url){setTimeout(function(){prog.style.display="none"},500);cb(url)});
-    }).catch(function(e){prog.style.display="none";console.error(e);cb("")});
-  });
+  compress(file,function(blob){document.getElementById(pfId).style.width="60%";st.ref(path).put(blob).then(function(snap){document.getElementById(pfId).style.width="100%";snap.ref.getDownloadURL().then(function(url){setTimeout(function(){prog.style.display="none"},500);cb(url)})}).catch(function(){prog.style.display="none";cb("")})});
 }
 
 function loadParticipants(cb){db.collection("participantes").get().then(function(s){allP=s.docs.map(function(d){return Object.assign({id:d.id},d.data())});if(cb)cb()}).catch(function(){allP=[];if(cb)cb()})}
 function loadAdminPwd(cb){db.collection("config").doc("admin").get().then(function(d){if(d.exists)adminPwd=d.data().pwd||"pf2026";if(cb)cb()}).catch(function(){if(cb)cb()})}
-
 function getPts(pid,cb){db.collection("pontos").doc(pid).get().then(function(d){cb(d.exists?d.data():{total:0,comp:0,res:0})}).catch(function(){cb({total:0,comp:0,res:0})})}
 
 function recalc(pid,cb){
@@ -465,16 +447,7 @@ function recalc(pid,cb){
   db.collection("treinos").where("pid","==",pid).get().then(function(s){comp+=s.size*5;check()}).catch(check);
   db.collection("avaliacoes").where("pid","==",pid).orderBy("data").get().then(function(s){
     var avs=s.docs.map(function(d){return d.data()});comp+=avs.length*10;
-    if(avs.length>=2){
-      var f=avs[0],l=avs[avs.length-1];
-      var gordF=f.gord||0,gordL=l.gord||0;
-      var magraF=100-gordF,magraL=100-gordL;
-      if((gordF-gordL)>=0.5)res+=15;
-      if((magraL-magraF)>=0.5)res+=15;
-      if((f.ca-l.ca)>=1)res+=15;
-      if(p.sexo==="M"?l.ca<94:l.ca<80)res+=15;
-      if(l.gord&&(p.sexo==="M"?l.gord<20:l.gord<28))res+=15;
-    }
+    if(avs.length>=2){var f=avs[0],l=avs[avs.length-1];if((f.gord||0)-(l.gord||0)>=0.5)res+=15;if(((100-(l.gord||0))-(100-(f.gord||0)))>=0.5)res+=15;if((f.ca-l.ca)>=1)res+=15;if(p.sexo==="M"?l.ca<94:l.ca<80)res+=15;if(l.gord&&(p.sexo==="M"?l.gord<20:l.gord<28))res+=15}
     check();
   }).catch(check);
   db.collection("laudos").where("pid","==",pid).get().then(function(s){
@@ -505,7 +478,7 @@ function doCadastro(){
   if(!nome||!mat||!dept||!sexo||!altura||!peso||!ca||!pwd){T("Preencha os campos obrigatorios (*).");return}
   if(allP.find(function(x){return x.mat===mat})){T("Matricula ja cadastrada.");return}
   if(pwd.length<4){T("Senha: minimo 4 caracteres.");return}
-  T("Cadastrando...",5000);
+  T("Cadastrando...",6000);
   db.collection("participantes").add({nome:nome,mat:mat,dept:dept,sexo:sexo,idade:idade,altura:altura,peso:peso,ca:ca,gord:gord,pas:pas,ldl:ldl,tgl:tgl,hba1c:hba1c,tabag:tabag,dm:dm,pwd:pwd,ts:firebase.firestore.FieldValue.serverTimestamp()})
   .then(function(ref){
     var np={id:ref.id,nome:nome,mat:mat,dept:dept,sexo:sexo,idade:idade,altura:altura,peso:peso,ca:ca,gord:gord,pas:pas,ldl:ldl,tgl:tgl,hba1c:hba1c,tabag:tabag,dm:dm,pwd:pwd};
@@ -514,8 +487,7 @@ function doCadastro(){
 }
 
 function enterApp(){
-  document.getElementById("auth-screen").style.display="none";
-  document.getElementById("main-app").style.display="block";
+  document.getElementById("auth-screen").style.display="none";document.getElementById("main-app").style.display="block";
   document.getElementById("tb-user").textContent=isAdmin?"Administrador":cu.nome.split(" ")[0]+" - "+cu.dept;
   if(!isAdmin)document.getElementById("tb-pts").style.display="block";
   if(isAdmin)document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="flex"});
@@ -542,55 +514,32 @@ function switchTab(id){
 function renderRanking(){
   var depts={};DEPTS.forEach(function(x){depts[x]={nm:x,pts:0,count:0}});
   if(!allP.length){
-    document.getElementById("hero-leader").textContent="Sem participantes";
-    document.getElementById("hero-pts").textContent="";
+    document.getElementById("hero-leader").textContent="Sem participantes";document.getElementById("hero-pts").textContent="";
     document.getElementById("rank-metrics").innerHTML='<div class="mc"><div class="v">0</div><div class="l">Participantes</div></div><div class="mc"><div class="v">-</div><div class="l">Lider</div></div>';
-    document.getElementById("podium-area").innerHTML='<div class="empty">Nenhum dado ainda.</div>';
-    document.getElementById("ranking-full").innerHTML="";
-    document.getElementById("destaques-list").innerHTML='<div class="empty">Nenhum dado ainda.</div>';
-    return;
+    document.getElementById("podium-area").innerHTML='<div class="empty">Nenhum dado ainda.</div>';document.getElementById("ranking-full").innerHTML="";document.getElementById("destaques-list").innerHTML='<div class="empty">Nenhum dado ainda.</div>';return;
   }
   var ptsArr=[],pending=allP.length;
-  allP.forEach(function(p){
-    getPts(p.id,function(r){
-      ptsArr.push({p:p,r:r});
-      if(depts[p.dept]){depts[p.dept].pts+=r.total;depts[p.dept].count++}
-      pending--;
-      if(pending===0){
-        var sorted=Object.values(depts).filter(function(x){return x.count>0}).map(function(x){return Object.assign({},x,{media:Math.round(x.pts/x.count)})}).sort(function(a,b){return b.media-a.media});
-        var lider=sorted[0];
-        document.getElementById("hero-leader").textContent=lider?lider.nm:"Sem dados";
-        document.getElementById("hero-pts").textContent=lider?lider.media+" pts/pessoa":"";
-        document.getElementById("rank-metrics").innerHTML='<div class="mc"><div class="v">'+allP.length+'</div><div class="l">Participantes</div></div><div class="mc"><div class="v">'+sorted.length+'</div><div class="l">Times ativos</div></div>';
-        var medals=["🥇","🥈","🥉"];
-        var podium3=sorted.slice(0,3);
-        var podiumOrder=podium3.length===3?[podium3[1],podium3[0],podium3[2]]:(podium3.length===2?[podium3[1],podium3[0]]:[podium3[0]]);
-        var podiumClasses=podium3.length===3?["podium-item podium-2","podium-item podium-1","podium-item podium-3"]:["podium-item podium-2","podium-item podium-1"];
-        document.getElementById("podium-area").innerHTML=podiumOrder.map(function(d,i){
-          var origIdx=podium3.indexOf(d);
-          var cls=origIdx===0?"podium-1":origIdx===1?"podium-2":"podium-3";
-          return '<div class="podium-item '+cls+'"><div class="podium-medal">'+medals[origIdx]+'</div><div class="podium-bar"><span class="podium-num">'+(origIdx+1)+'</span></div><div class="podium-name">'+d.nm+'</div><div class="podium-pts">'+d.media+' pts</div></div>';
-        }).join("");
-        var mx=sorted[0]?sorted[0].media:1;
-        var posClasses=["rank-pos1","rank-pos2","rank-pos3","rank-pos-n"];
-        var badgeClasses=["rp1","rp2","rp3","rpn"];
-        document.getElementById("ranking-full").innerHTML=sorted.length>3?'<div style="margin-top:14px;font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Demais times</div>'+sorted.slice(3).map(function(d,i){
-          return '<div class="rank-list-item rank-pos-n"><div class="rank-pos-badge rpn">'+(i+4)+'</div><div class="rank-info"><div class="rank-nm">'+d.nm+'</div><div class="rank-sb">'+d.count+' membro'+(d.count>1?"s":"")+" | soma "+d.pts+' pts</div><div class="rank-bar-wrap"><div class="rank-bar"><div class="rank-bar-fill" style="width:'+Math.round((d.media/mx)*100)+'%"></div></div></div></div><div class="rank-pts"><div class="rank-pts-v">'+d.media+'</div><div class="rank-pts-l">pts/pessoa</div></div></div>';
-        }).join(""):"";
-        ptsArr.sort(function(a,b){return b.r.total-a.r.total});
-        document.getElementById("destaques-list").innerHTML=ptsArr.slice(0,3).map(function(x,i){
-          var medals2=["🥇","🥈","🥉"];
-          return '<div class="dest-item"><span style="font-size:20px">'+medals2[i]+'</span><div class="av">'+IN(x.p.nome)+'</div><div class="pi"><div class="pn">'+x.p.nome+'</div><div class="pd">'+x.p.dept+'</div></div><span class="badge bi" style="font-size:12px;padding:4px 12px">'+x.r.total+' pts</span></div>';
-        }).join("");
-      }
-    });
-  });
+  allP.forEach(function(p){getPts(p.id,function(r){ptsArr.push({p:p,r:r});if(depts[p.dept]){depts[p.dept].pts+=r.total;depts[p.dept].count++}pending--;if(pending===0)_drawRanking(ptsArr,depts)})});
+}
+
+function _drawRanking(ptsArr,depts){
+  var sorted=Object.values(depts).filter(function(x){return x.count>0}).map(function(x){return Object.assign({},x,{media:Math.round(x.pts/x.count)})}).sort(function(a,b){return b.media-a.media});
+  var lider=sorted[0];
+  document.getElementById("hero-leader").textContent=lider?lider.nm:"Sem dados";document.getElementById("hero-pts").textContent=lider?lider.media+" pts/pessoa":"";
+  document.getElementById("rank-metrics").innerHTML='<div class="mc"><div class="v">'+allP.length+'</div><div class="l">Participantes</div></div><div class="mc"><div class="v">'+sorted.length+'</div><div class="l">Times ativos</div></div>';
+  var medals=["\uD83E\uDD47","\uD83E\uDD48","\uD83E\uDD49"];
+  var top3=sorted.slice(0,3);
+  var order=top3.length===3?[top3[1],top3[0],top3[2]]:top3.length===2?[top3[1],top3[0]]:[top3[0]];
+  document.getElementById("podium-area").innerHTML=order.map(function(d){var i=top3.indexOf(d);var cls=["podium-1","podium-2","podium-3"][i]||"podium-3";return'<div class="podium-item '+cls+'"><div class="podium-medal">'+medals[i]+'</div><div class="podium-bar"><span class="podium-num">'+(i+1)+'</span></div><div class="podium-name">'+d.nm+'</div><div class="podium-pts">'+d.media+' pts</div></div>'}).join("");
+  var mx=sorted[0]?sorted[0].media:1;
+  document.getElementById("ranking-full").innerHTML=sorted.length>3?'<div style="margin-top:14px;font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Demais times</div>'+sorted.slice(3).map(function(d,i){return'<div class="rank-list-item rank-pos-n"><div class="rank-pos-badge rpn">'+(i+4)+'</div><div class="rank-info"><div class="rank-nm">'+d.nm+'</div><div class="rank-sb">'+d.count+' membro'+(d.count>1?"s":"")+" | "+d.pts+' pts</div><div class="rank-bar-wrap"><div class="rank-bar"><div class="rank-bar-fill" style="width:'+Math.round((d.media/mx)*100)+'%"></div></div></div></div><div class="rank-pts"><div class="rank-pts-v">'+d.media+'</div><div class="rank-pts-l">pts/pessoa</div></div></div>'}).join(""):"";
+  ptsArr.sort(function(a,b){return b.r.total-a.r.total});
+  document.getElementById("destaques-list").innerHTML=ptsArr.slice(0,3).map(function(x,i){return'<div class="dest-item"><span style="font-size:20px">'+medals[i]+'</span><div class="av">'+IN(x.p.nome)+'</div><div class="pi"><div class="pn">'+x.p.nome+'</div><div class="pd">'+x.p.dept+'</div></div><span class="badge bi" style="font-size:12px;padding:4px 12px">'+x.r.total+' pts</span></div>'}).join("");
 }
 
 function getMyData(cb){
   if(!cu||isAdmin){cb();return}
-  var done=0;
-  function check(){done++;if(done===4)cb()}
+  var done=0;function check(){done++;if(done===4)cb()}
   if(!mT){db.collection("treinos").where("pid","==",cu.id).orderBy("data","desc").get().then(function(s){mT=s.docs.map(function(d){return Object.assign({id:d.id},d.data())});check()}).catch(function(){mT=[];check()})}else check();
   if(!mA){db.collection("avaliacoes").where("pid","==",cu.id).orderBy("data").get().then(function(s){mA=s.docs.map(function(d){return d.data()});check()}).catch(function(){mA=[];check()})}else check();
   if(!mL){db.collection("laudos").where("pid","==",cu.id).orderBy("data","desc").get().then(function(s){mL=s.docs.map(function(d){return d.data()});check()}).catch(function(){mL=[];check()})}else check();
@@ -604,10 +553,9 @@ function renderTreino(){
     var semana=(mT||[]).filter(function(t){return t.data>=dom.toISOString().split("T")[0]});
     document.getElementById("streak-n").textContent=semana.length;
     recalc(cu.id,function(pts){document.getElementById("tb-pts").textContent=pts.total+" pts"});
-    var nc=(mT||[]).length,nl=(mL||[]).length;
-    document.getElementById("conquistas-list").innerHTML=CQ.map(function(c){var ok=c.f(nc,nl);return'<span class="cq-item '+(ok?"cq-ok":"cq-no")+'"><i class="ti '+c.ic+'"></i> '+c.nm+"</span>"}).join("");
-    document.getElementById("ergo-hist").innerHTML=(mE||[]).length?(mE||[]).map(function(e){return'<div class="prow"><div class="pi"><div class="pn">'+e.mets+' METs</div><div class="pd">'+FD(e.data)+'</div></div><span class="badge '+(e.mets>=10?"bs":"bw")+'">'+(e.mets>=10?"Meta ✓":"Abaixo da meta")+"</span></div>"}).join(""):'<div class="empty" style="padding:10px">Nenhum teste registrado.</div>';
-    document.getElementById("treino-hist").innerHTML=(mT||[]).length?(mT||[]).slice(0,10).map(function(t){return'<div class="th-item">'+(t.fotoUrl?'<img class="th-thumb" src="'+t.fotoUrl+'" onclick="document.getElementById('modal-img').src=''+t.fotoUrl+'';document.getElementById('foto-modal').classList.add('open')" />':"<div class='th-thumb'><i class='ti ti-run'></i></div>")+'<div class="th-info"><div class="th-d">'+FD(t.data)+" &bull; "+t.tipo+'</div><div class="th-t">'+t.duracao+' min</div></div><span class="badge bs">+5 pts</span></div>'}).join(""):'<div class="empty">Nenhum treino ainda.</div>';
+    document.getElementById("conquistas-list").innerHTML=CQ.map(function(c){var ok=c.f((mT||[]).length,(mL||[]).length);return'<span class="cq-item '+(ok?"cq-ok":"cq-no")+'"><i class="ti '+c.ic+'"></i> '+c.nm+"</span>"}).join("");
+    document.getElementById("ergo-hist").innerHTML=(mE||[]).length?(mE||[]).map(function(e){return'<div class="prow"><div class="pi"><div class="pn">'+e.mets+' METs</div><div class="pd">'+FD(e.data)+'</div></div><span class="badge '+(e.mets>=10?"bs":"bw")+'">'+(e.mets>=10?"Meta":"Abaixo")+"</span></div>"}).join(""):'<div class="empty" style="padding:10px">Nenhum teste.</div>';
+    document.getElementById("treino-hist").innerHTML=(mT||[]).length?(mT||[]).slice(0,10).map(function(t){return'<div class="th-item">'+(t.fotoUrl?'<img class="th-thumb" src="'+t.fotoUrl+'" onclick="document.getElementById('modal-img').src=''+t.fotoUrl+'';document.getElementById('foto-modal').classList.add('open')" />':"<div class='th-thumb'><i class='ti ti-run'></i></div>")+'<div class="th-info"><div class="th-d">'+FD(t.data)+" - "+t.tipo+'</div><div class="th-t">'+t.duracao+' min</div></div><span class="badge bs">+5 pts</span></div>'}).join(""):'<div class="empty">Nenhum treino ainda.</div>';
   });
 }
 
@@ -616,18 +564,9 @@ function registrarTreino(){
   var tipo=document.getElementById("t-tipo").value,dur=document.getElementById("t-dur").value;
   if(!tipo||!dur){T("Preencha tipo e duracao.");return}
   var hoje=new Date(),dom=new Date(hoje);dom.setDate(hoje.getDate()-hoje.getDay());
-  if((mT||[]).filter(function(t){return t.data>=dom.toISOString().split("T")[0]}).length>=4){T("Limite de 4 treinos por semana atingido.");return}
-  T("Salvando...",4000);
-  function salvar(fotoUrl){
-    db.collection("treinos").add({pid:cu.id,dept:cu.dept,tipo:tipo,duracao:parseInt(dur),fotoUrl:fotoUrl||"",data:new Date().toISOString().split("T")[0],ts:firebase.firestore.FieldValue.serverTimestamp()})
-    .then(function(){
-      mT=null;mA=null;fF=null;T("Treino registrado! +5 pts");
-      document.getElementById("t-tipo").value="";document.getElementById("t-dur").value="";
-      document.getElementById("fp1").style.display="none";document.getElementById("ua1").classList.remove("has");
-      document.getElementById("ui1").className="ti ti-camera-plus";document.getElementById("ut1").textContent="Toque para tirar foto ou escolher da galeria";
-      recalc(cu.id,function(){renderTreino();renderRanking()});
-    }).catch(function(e){T("Erro: "+e.message)});
-  }
+  if((mT||[]).filter(function(t){return t.data>=dom.toISOString().split("T")[0]}).length>=4){T("Limite de 4 treinos por semana.");return}
+  T("Salvando...",5000);
+  function salvar(fotoUrl){db.collection("treinos").add({pid:cu.id,dept:cu.dept,tipo:tipo,duracao:parseInt(dur),fotoUrl:fotoUrl||"",data:new Date().toISOString().split("T")[0],ts:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){mT=null;fF=null;T("Treino registrado! +5 pts");document.getElementById("t-tipo").value="";document.getElementById("t-dur").value="";document.getElementById("fp1").style.display="none";document.getElementById("ua1").classList.remove("has");document.getElementById("ui1").className="ti ti-camera-plus";document.getElementById("ut1").textContent="Toque para tirar foto";recalc(cu.id,function(){renderTreino();renderRanking()})}).catch(function(e){T("Erro: "+e.message)})}
   if(fF)uploadFoto(fF,"treinos/"+cu.id+"/"+Date.now()+".jpg","prog1","prog1f",salvar);else salvar("");
 }
 
@@ -635,37 +574,22 @@ function registrarErgo(){
   if(!cu||isAdmin)return;
   var mets=parseFloat(document.getElementById("t-mets").value),data=document.getElementById("t-mets-data").value;
   if(!mets||!data){T("Preencha METs e data.");return}
-  T("Salvando...",4000);
-  db.collection("ergometrico").add({pid:cu.id,dept:cu.dept,mets:mets,data:data,ts:firebase.firestore.FieldValue.serverTimestamp()})
-  .then(function(){mE=null;T(mets>=10?"Registrado! +20 pts (METs >= 10)":"Registrado! Abaixo de 10 METs");document.getElementById("t-mets").value="";recalc(cu.id,function(){renderTreino();renderRanking()})})
-  .catch(function(e){T("Erro: "+e.message)});
+  T("Salvando...",5000);
+  db.collection("ergometrico").add({pid:cu.id,dept:cu.dept,mets:mets,data:data,ts:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){mE=null;T(mets>=10?"Registrado! +20 pts":"Registrado - abaixo de 10 METs");document.getElementById("t-mets").value="";recalc(cu.id,function(){renderTreino();renderRanking()})}).catch(function(e){T("Erro: "+e.message)});
 }
 
 function renderEvolucao(){
   if(!cu||isAdmin)return;
   getMyData(function(){
     var p=allP.find(function(x){return x.id===cu.id});if(!p)return;
-    recalc(cu.id,function(pts){
-      document.getElementById("meus-pts").textContent=pts.total;
-      document.getElementById("pts-comp").textContent=pts.comp;
-      document.getElementById("pts-res").textContent=pts.res;
-      document.getElementById("tb-pts").textContent=pts.total+" pts";
-    });
+    recalc(cu.id,function(pts){document.getElementById("meus-pts").textContent=pts.total;document.getElementById("pts-comp").textContent=pts.comp;document.getElementById("pts-res").textContent=pts.res;document.getElementById("tb-pts").textContent=pts.total+" pts"});
     var avs=mA||[],last=avs.length?avs[avs.length-1]:null;
     var gordB=p.gord||0,gordL=last&&last.gord!=null?last.gord:null;
-    var magraB=100-gordB,magraL=gordL!=null?100-gordL:null;
     document.getElementById("ev-metrics").innerHTML=
       '<div class="mc"><div class="v" style="color:'+(gordL!=null&&(gordB-gordL)>0?"var(--ok)":"var(--pf)")+'">'+(gordL!=null?((gordB-gordL)>=0?"-":"+")+Math.abs(gordB-gordL).toFixed(1)+"%":gordB.toFixed(1)+"%")+'</div><div class="l">% Gordura</div></div>'+
-      '<div class="mc"><div class="v" style="color:'+(magraL!=null&&(magraL-magraB)>0?"var(--ok)":"var(--pf)")+'">'+(magraL!=null?((magraL-magraB)>=0?"+":"-")+Math.abs(magraL-magraB).toFixed(1)+"%":magraB.toFixed(1)+"%")+'</div><div class="l">% Massa Magra</div></div>';
+      '<div class="mc"><div class="v" style="color:'+((gordL!=null&&((100-gordL)-(100-gordB))>0)?"var(--ok)":"var(--pf)")+'">'+(gordL!=null?(((100-gordL)-(100-gordB))>=0?"+":"-")+Math.abs((100-gordL)-(100-gordB)).toFixed(1)+"%":(100-gordB).toFixed(1)+"%")+'</div><div class="l">% Massa Magra</div></div>';
     renderGrafico(p,avs);
-    document.getElementById("minha-hist").innerHTML=avs.length?
-      '<div class="etw"><table class="et"><thead><tr><th>Data</th><th>Peso</th><th>% Gord.</th><th>% Magra</th><th>CA</th><th>PA</th></tr></thead><tbody>'+
-      avs.map(function(a,i){
-        var gord=a.gord||0,magra=100-gord;
-        var prev=i>0?avs[i-1]:p,dp=(a.peso-prev.peso).toFixed(1);
-        return'<tr><td>'+FD(a.data)+'</td><td class="'+(parseFloat(dp)<0?"dp":"dn")+'">'+a.peso+'kg</td><td>'+gord.toFixed(1)+'%</td><td>'+magra.toFixed(1)+'%</td><td>'+a.ca+'cm</td><td>'+(a.pa||"-")+"</td></tr>";
-      }).join("")+"</tbody></table></div>"
-      :'<div class="empty">Nenhuma avaliacao registrada.</div>';
+    document.getElementById("minha-hist").innerHTML=avs.length?'<div class="etw"><table class="et"><thead><tr><th>Data</th><th>Peso</th><th>% Gord.</th><th>% Magra</th><th>CA</th><th>PA</th></tr></thead><tbody>'+avs.map(function(a,i){var g=a.gord||0,m=100-g;var prev=i>0?avs[i-1]:p,dp=(a.peso-prev.peso).toFixed(1);return'<tr><td>'+FD(a.data)+'</td><td class="'+(parseFloat(dp)<0?"dp":"dn")+'">'+a.peso+'kg</td><td>'+g.toFixed(1)+'%</td><td>'+m.toFixed(1)+'%</td><td>'+a.ca+'cm</td><td>'+(a.pa||"-")+"</td></tr>"}).join("")+"</tbody></table></div>":'<div class="empty">Nenhuma avaliacao registrada.</div>';
   });
 }
 
@@ -682,20 +606,14 @@ function renderGrafico(p,avs){
   gC=new Chart(document.getElementById("graf-ev"),{type:"line",data:{labels:labels,datasets:[{data:data,borderColor:"#185FA5",backgroundColor:"rgba(24,95,165,.09)",fill:true,tension:.4,pointRadius:5,pointBackgroundColor:"#185FA5",borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11},color:"#888"}},y:{grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11},color:"#888"}}}}});
 }
 
-function setGraf(tipo,btn){
-  gT=tipo;document.querySelectorAll("#graf-tabs button").forEach(function(b){b.classList.remove("active")});btn.classList.add("active");renderEvolucao();
-}
+function setGraf(tipo,btn){gT=tipo;document.querySelectorAll("#graf-tabs button").forEach(function(b){b.classList.remove("active")});btn.classList.add("active");renderEvolucao()}
 
 function renderLab(){
   if(!cu||isAdmin)return;
   getMyData(function(){
     var p=allP.find(function(x){return x.id===cu.id})||{},laudos=mL||[];
-    document.getElementById("lab-metas").innerHTML=Object.entries(LAB).map(function(e){
-      var k=e[0],cfg=e[1],ul=laudos.find(function(l){return l.tipo===k});
-      var ok=ul&&ul.valor<cfg.meta,ex=cfg.meta2&&ul&&ul.valor<cfg.meta2;
-      return'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><div><div style="font-size:13px;font-weight:600">'+cfg.nm+'</div><div style="font-size:10px;color:var(--tx3);margin-top:2px">'+cfg.desc+'</div></div><div style="text-align:right">'+(ul?'<div style="font-size:14px;font-weight:700;color:'+(ok?"var(--ok)":"var(--wa)")+'">'+ul.valor+" "+cfg.u+'</div>':(p[k]?'<div style="font-size:11px;color:var(--tx3)">Basal: '+p[k]+" "+cfg.u+"</div>":'<div style="font-size:11px;color:var(--tx3)">Sem dados</div>'))+(ok?'<span class="badge bs" style="margin-top:4px;display:inline-block">+'+cfg.pts+(ex?"+"+cfg.pts2:"")+" pts</span>":"")+"</div></div>";
-    }).join("");
-    document.getElementById("lab-hist").innerHTML=laudos.length?laudos.map(function(l){return'<div class="th-item">'+(l.fotoUrl?'<img class="th-thumb" src="'+l.fotoUrl+'" onclick="document.getElementById('modal-img').src=''+l.fotoUrl+'';document.getElementById('foto-modal').classList.add('open')" />':"<div class='th-thumb'><i class='ti ti-flask'></i></div>")+'<div class="th-info"><div class="th-d">'+(LAB[l.tipo]?LAB[l.tipo].nm:l.tipo)+" &bull; "+l.valor+" "+(LAB[l.tipo]?LAB[l.tipo].u:"")+'</div><div class="th-t">'+FD(l.data)+'</div></div>'+(l.valor<(LAB[l.tipo]?LAB[l.tipo].meta:999)?'<span class="badge bs">Meta ✓</span>':'<span class="badge bw">Em prog.</span>')+"</div>"}).join(""):'<div class="empty">Nenhum laudo ainda.</div>';
+    document.getElementById("lab-metas").innerHTML=Object.entries(LAB).map(function(e){var k=e[0],cfg=e[1],ul=laudos.find(function(l){return l.tipo===k});var ok=ul&&ul.valor<cfg.meta,ex=cfg.meta2&&ul&&ul.valor<cfg.meta2;return'<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><div><div style="font-size:13px;font-weight:600">'+cfg.nm+'</div><div style="font-size:10px;color:var(--tx3);margin-top:2px">'+cfg.desc+'</div></div><div style="text-align:right">'+(ul?'<div style="font-size:14px;font-weight:700;color:'+(ok?"var(--ok)":"var(--wa)")+'">'+ul.valor+" "+cfg.u+"</div>":(p[k]?'<div style="font-size:11px;color:var(--tx3)">Basal: '+p[k]+" "+cfg.u+"</div>":'<div style="font-size:11px;color:var(--tx3)">Sem dados</div>'))+(ok?'<span class="badge bs" style="margin-top:4px;display:inline-block">+'+cfg.pts+(ex?"+"+cfg.pts2:"")+" pts</span>":"")+"</div></div>"}).join("");
+    document.getElementById("lab-hist").innerHTML=laudos.length?laudos.map(function(l){return'<div class="th-item">'+(l.fotoUrl?'<img class="th-thumb" src="'+l.fotoUrl+'" onclick="document.getElementById('modal-img').src=''+l.fotoUrl+'';document.getElementById('foto-modal').classList.add('open')" />':"<div class='th-thumb'><i class='ti ti-flask'></i></div>")+'<div class="th-info"><div class="th-d">'+(LAB[l.tipo]?LAB[l.tipo].nm:l.tipo)+" - "+l.valor+" "+(LAB[l.tipo]?LAB[l.tipo].u:"")+'</div><div class="th-t">'+FD(l.data)+'</div></div>'+(l.valor<(LAB[l.tipo]?LAB[l.tipo].meta:999)?'<span class="badge bs">Meta</span>':'<span class="badge bw">Em prog.</span>')+"</div>"}).join(""):'<div class="empty">Nenhum laudo ainda.</div>';
   });
 }
 
@@ -703,134 +621,67 @@ function enviarLaudo(){
   if(!cu||isAdmin)return;
   var tipo=document.getElementById("lab-tipo").value,valor=parseFloat(document.getElementById("lab-valor").value);
   if(!tipo||isNaN(valor)){T("Selecione marcador e valor.");return}
-  T("Enviando...",4000);
-  function salvar(fotoUrl){
-    db.collection("laudos").add({pid:cu.id,dept:cu.dept,tipo:tipo,valor:valor,fotoUrl:fotoUrl||"",data:new Date().toISOString().split("T")[0],ts:firebase.firestore.FieldValue.serverTimestamp()})
-    .then(function(){mL=null;T("Laudo enviado!");lF=null;document.getElementById("lab-tipo").value="";document.getElementById("lab-valor").value="";document.getElementById("fp2").style.display="none";document.getElementById("ua2").classList.remove("has");document.getElementById("ui2").className="ti ti-file-certificate";document.getElementById("ut2").textContent="Toque para anexar foto do laudo";recalc(cu.id,function(){renderLab();renderRanking()})})
-    .catch(function(e){T("Erro: "+e.message)});
-  }
+  T("Enviando...",5000);
+  function salvar(fotoUrl){db.collection("laudos").add({pid:cu.id,dept:cu.dept,tipo:tipo,valor:valor,fotoUrl:fotoUrl||"",data:new Date().toISOString().split("T")[0],ts:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){mL=null;T("Laudo enviado!");lF=null;document.getElementById("lab-tipo").value="";document.getElementById("lab-valor").value="";document.getElementById("fp2").style.display="none";document.getElementById("ua2").classList.remove("has");document.getElementById("ui2").className="ti ti-file-certificate";document.getElementById("ut2").textContent="Toque para anexar foto do laudo";recalc(cu.id,function(){renderLab();renderRanking()})}).catch(function(e){T("Erro: "+e.message)})}
   if(lF)uploadFoto(lF,"laudos/"+cu.id+"/"+Date.now()+".jpg","prog2","prog2f",salvar);else salvar("");
 }
 
 function calcERG(sexo,idade,ldl,pas,tabag,dm){
   var pts=0;
-  if(sexo==="M"){
-    if(idade<=39)pts+=0;else if(idade<=44)pts+=3;else if(idade<=49)pts+=6;else if(idade<=54)pts+=8;else if(idade<=59)pts+=10;else if(idade<=64)pts+=11;else if(idade<=69)pts+=12;else if(idade<=74)pts+=14;else pts+=15;
-    if(ldl>=190)pts+=3;else if(ldl>=160)pts+=1;
-    if(pas>=160)pts+=3;else if(pas>=140)pts+=2;else if(pas>=130)pts+=1;else if(pas<120)pts-=2;
-    if(tabag)pts+=4;if(dm)pts+=3;
-    var tM={"-3":1,"-2":2,"-1":2,"0":3,"1":4,"2":4,"3":5,"4":7,"5":8,"6":10,"7":12,"8":14,"9":16,"10":20,"11":25,"12":30,"13":35,"14":40,"15":47};
-    return tM[String(Math.max(-3,Math.min(15,pts)))]||(pts>15?">47":"<1");
-  }else{
-    if(idade<=39)pts+=0;else if(idade<=44)pts+=3;else if(idade<=49)pts+=6;else if(idade<=54)pts+=8;else if(idade<=59)pts+=10;else if(idade<=64)pts+=11;else if(idade<=69)pts+=12;else if(idade<=74)pts+=14;else pts+=16;
-    if(ldl<130)pts-=3;else if(ldl>=190)pts+=3;else if(ldl>=160)pts+=1;
-    if(pas<120)pts-=3;else if(pas>=160)pts+=5;else if(pas>=140)pts+=4;else if(pas>=130)pts+=2;
-    if(tabag)pts+=3;if(dm)pts+=4;
-    var tF={"-2":1,"-1":1,"0":1,"1":1,"2":1,"3":2,"4":2,"5":3,"6":3,"7":4,"8":5,"9":6,"10":7,"11":8,"12":10,"13":12,"14":14,"15":17,"16":20,"17":24,"18":27,"19":32};
-    return tF[String(Math.max(-2,Math.min(19,pts)))]||(pts>19?">32":"<1");
-  }
+  if(sexo==="M"){if(idade<=39)pts+=0;else if(idade<=44)pts+=3;else if(idade<=49)pts+=6;else if(idade<=54)pts+=8;else if(idade<=59)pts+=10;else if(idade<=64)pts+=11;else if(idade<=69)pts+=12;else if(idade<=74)pts+=14;else pts+=15;if(ldl>=190)pts+=3;else if(ldl>=160)pts+=1;if(pas>=160)pts+=3;else if(pas>=140)pts+=2;else if(pas>=130)pts+=1;else if(pas<120)pts-=2;if(tabag)pts+=4;if(dm)pts+=3;var tM={"-3":1,"-2":2,"-1":2,"0":3,"1":4,"2":4,"3":5,"4":7,"5":8,"6":10,"7":12,"8":14,"9":16,"10":20,"11":25,"12":30,"13":35,"14":40,"15":47};return tM[String(Math.max(-3,Math.min(15,pts)))]||(pts>15?">47":"<1")}
+  else{if(idade<=39)pts+=0;else if(idade<=44)pts+=3;else if(idade<=49)pts+=6;else if(idade<=54)pts+=8;else if(idade<=59)pts+=10;else if(idade<=64)pts+=11;else if(idade<=69)pts+=12;else if(idade<=74)pts+=14;else pts+=16;if(ldl<130)pts-=3;else if(ldl>=190)pts+=3;else if(ldl>=160)pts+=1;if(pas<120)pts-=3;else if(pas>=160)pts+=5;else if(pas>=140)pts+=4;else if(pas>=130)pts+=2;if(tabag)pts+=3;if(dm)pts+=4;var tF={"-2":1,"-1":1,"0":1,"1":1,"2":1,"3":2,"4":2,"5":3,"6":3,"7":4,"8":5,"9":6,"10":7,"11":8,"12":10,"13":12,"14":14,"15":17,"16":20,"17":24,"18":27,"19":32};return tF[String(Math.max(-2,Math.min(19,pts)))]||(pts>19?">32":"<1")}
 }
 
 function renderRisco(){
-  if(!cu||isAdmin)return;
-  var p=allP.find(function(x){return x.id===cu.id});if(!p)return;
-  if(p.pas)document.getElementById("r-pas").value=p.pas;
-  if(p.ldl)document.getElementById("r-ldl").value=p.ldl;
+  if(!cu||isAdmin)return;var p=allP.find(function(x){return x.id===cu.id});if(!p)return;
+  if(p.pas)document.getElementById("r-pas").value=p.pas;if(p.ldl)document.getElementById("r-ldl").value=p.ldl;
   document.getElementById("r-tabag").value=p.tabag||0;document.getElementById("r-dm").value=p.dm||0;
-  if(p.ldl&&p.pas&&p.idade&&p.sexo)calcularRisco();
-  else document.getElementById("risco-result").innerHTML='<div class="empty">Preencha os dados abaixo para calcular seu risco.</div>';
+  if(p.ldl&&p.pas&&p.idade&&p.sexo)calcularRisco();else document.getElementById("risco-result").innerHTML='<div class="empty">Preencha os dados abaixo.</div>';
 }
 
 function calcularRisco(){
   var p=allP.find(function(x){return x.id===(cu&&cu.id)});if(!p)return;
   var pas=parseFloat(document.getElementById("r-pas").value)||p.pas,ldl=parseFloat(document.getElementById("r-ldl").value)||p.ldl;
   var tabag=parseInt(document.getElementById("r-tabag").value)||0,dm=parseInt(document.getElementById("r-dm").value)||0;
-  if(!p.idade||!p.sexo||!ldl||!pas){T("Dados insuficientes. Complete o cadastro.");return}
+  if(!p.idade||!p.sexo||!ldl||!pas){T("Dados insuficientes.");return}
   var risco=calcERG(p.sexo,p.idade,ldl,pas,tabag,dm);
   var r=typeof risco==="number"?risco:parseInt(String(risco).replace(/[^0-9]/g,""))||0;
   var cls,label,desc,cor;
-  if(r<5){cls="risco-baixo";label="Risco Baixo";desc="Probabilidade menor que 5% de eventos cardiovasculares em 10 anos. Mantenha os habitos saudaveis!";cor="#3B6D11"}
-  else if(r<10){cls="risco-moderado";label="Risco Moderado";desc="Probabilidade de 5-10% em 10 anos. Mudancas de estilo de vida tem grande impacto nessa faixa.";cor="#BA7517"}
-  else if(r<20){cls="risco-alto";label="Risco Alto";desc="Probabilidade de 10-20% em 10 anos. Avaliacao medica e possivel inicio de tratamento sao indicados.";cor="#A32D2D"}
-  else{cls="risco-muito-alto";label="Risco Muito Alto";desc="Probabilidade maior que 20% em 10 anos. Tratamento medico e acompanhamento regular sao necessarios.";cor="#6B21A8"}
-  document.getElementById("risco-result").innerHTML=
-    '<div class="risco-card '+cls+'"><div class="risco-pct" style="color:'+cor+'">'+risco+'%</div><div class="risco-label" style="color:'+cor+'">'+label+'</div><div class="risco-desc">'+desc+'</div></div>'+
-    '<div class="card" style="font-size:11px;color:var(--tx2);line-height:1.7"><b>Parametros utilizados:</b> '+(p.sexo==="M"?"Masculino":"Feminino")+' &bull; '+p.idade+' anos &bull; LDL '+ldl+' mg/dL &bull; PAS '+pas+' mmHg &bull; '+(tabag?"Tabagista":"Nao tabagista")+' &bull; '+(dm?"Diabetico":"Sem diabetes")+'<br><span style="color:var(--tx3);display:block;margin-top:6px"><i class="ti ti-info-circle"></i> Escore de Risco Global SBC 2019. Nao substitui avaliacao medica individual.</span></div>';
+  if(r<5){cls="risco-baixo";label="Risco Baixo";desc="Prob. menor que 5% em 10 anos.";cor="#3B6D11"}
+  else if(r<10){cls="risco-moderado";label="Risco Moderado";desc="Prob. 5-10% em 10 anos. Mudancas de estilo de vida sao eficazes.";cor="#BA7517"}
+  else if(r<20){cls="risco-alto";label="Risco Alto";desc="Prob. 10-20% em 10 anos. Avaliacao medica indicada.";cor="#A32D2D"}
+  else{cls="risco-muito-alto";label="Risco Muito Alto";desc="Prob. maior que 20% em 10 anos. Tratamento necessario.";cor="#6B21A8"}
+  document.getElementById("risco-result").innerHTML='<div class="risco-card '+cls+'"><div class="risco-pct" style="color:'+cor+'">'+risco+'%</div><div class="risco-label" style="color:'+cor+'">'+label+'</div><div class="risco-desc">'+desc+'</div></div><div class="card" style="font-size:11px;color:var(--tx2);line-height:1.7"><b>Dados:</b> '+(p.sexo==="M"?"M":"F")+' - '+p.idade+' anos - LDL '+ldl+' - PAS '+pas+' - '+(tabag?"Tabag.":"N-tabag.")+' - '+(dm?"DM":"N-DM")+'<br><span style="color:var(--tx3)">ERG SBC 2019. Nao substitui avaliacao medica.</span></div>';
 }
 
-function renderParticipantes(){
-  var el=document.getElementById("lista-p");if(!el)return;
-  el.innerHTML=allP.length?allP.map(function(p){return'<div class="prow"><div class="av">'+IN(p.nome)+'</div><div class="pi"><div class="pn">'+p.nome+'</div><div class="pd">'+p.dept+" &bull; Mat. "+p.mat+'</div></div><button class="btn btn-sm" style="color:var(--er);border-color:var(--erl)" onclick="removerP(''+p.id+'')"><i class="ti ti-trash"></i></button></div>'}).join(""):'<div class="empty">Nenhum participante.</div>';
-}
-
-function removerP(pid){
-  if(!confirm("Remover participante e todos os dados?"))return;
-  db.collection("participantes").doc(pid).delete().then(function(){allP=allP.filter(function(p){return p.id!==pid});renderParticipantes();renderRanking();T("Removido.")}).catch(function(e){T("Erro: "+e.message)});
-}
-
-function popAvSel(){
-  var s=document.getElementById("av-p");s.innerHTML="<option value=''>Selecione...</option>"+allP.map(function(p){return'<option value="'+p.id+'">'+p.nome+" ("+p.dept+")</option>"}).join("");
-  var s2=document.getElementById("av-hs");s2.innerHTML="<option value=''>Selecione...</option>"+allP.map(function(p){return'<option value="'+p.id+'">'+p.nome+"</option>"}).join("");
-}
+function renderParticipantes(){var el=document.getElementById("lista-p");if(!el)return;el.innerHTML=allP.length?allP.map(function(p){return'<div class="prow"><div class="av">'+IN(p.nome)+'</div><div class="pi"><div class="pn">'+p.nome+'</div><div class="pd">'+p.dept+" - Mat. "+p.mat+'</div></div><button class="btn btn-sm" style="color:var(--er);border-color:var(--erl)" onclick="removerP(''+p.id+'')"><i class="ti ti-trash"></i></button></div>'}).join(""):'<div class="empty">Nenhum participante.</div>'}
+function removerP(pid){if(!confirm("Remover?"))return;db.collection("participantes").doc(pid).delete().then(function(){allP=allP.filter(function(p){return p.id!==pid});renderParticipantes();renderRanking();T("Removido.")}).catch(function(e){T("Erro: "+e.message)})}
+function popAvSel(){var s=document.getElementById("av-p");s.innerHTML="<option value=''>Selecione...</option>"+allP.map(function(p){return'<option value="'+p.id+'">'+p.nome+" ("+p.dept+")</option>"}).join("");var s2=document.getElementById("av-hs");s2.innerHTML="<option value=''>Selecione...</option>"+allP.map(function(p){return'<option value="'+p.id+'">'+p.nome+"</option>"}).join("")}
 
 function registrarAv(){
   var pid=document.getElementById("av-p").value,data=document.getElementById("av-data").value;
   var peso=parseFloat(document.getElementById("av-peso").value),ca=parseFloat(document.getElementById("av-ca").value);
   var gord=parseFloat(document.getElementById("av-gord").value)||null,pa=document.getElementById("av-pa").value.trim();
   if(!pid||!data||!peso||!ca){T("Preencha os campos obrigatorios.");return}
-  T("Salvando...",4000);
-  db.collection("avaliacoes").add({pid:pid,data:data,peso:peso,ca:ca,gord:gord,pa:pa,ts:firebase.firestore.FieldValue.serverTimestamp()})
-  .then(function(){if(cu&&pid===cu.id)mA=null;T("Avaliacao registrada!");["av-peso","av-ca","av-gord","av-pa"].forEach(function(f){document.getElementById(f).value=""});recalc(pid,function(){renderRanking()})})
-  .catch(function(e){T("Erro: "+e.message)});
+  T("Salvando...",5000);
+  db.collection("avaliacoes").add({pid:pid,data:data,peso:peso,ca:ca,gord:gord,pa:pa,ts:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){if(cu&&pid===cu.id)mA=null;T("Avaliacao registrada!");["av-peso","av-ca","av-gord","av-pa"].forEach(function(f){document.getElementById(f).value=""});recalc(pid,function(){renderRanking()})}).catch(function(e){T("Erro: "+e.message)});
 }
 
-function renderHistAdmin(pid){
-  var el=document.getElementById("hist-av");if(!pid){el.innerHTML="";return}
-  db.collection("avaliacoes").where("pid","==",pid).orderBy("data").get().then(function(s){
-    var avs=s.docs.map(function(d){return d.data()}),p=allP.find(function(x){return x.id===pid})||{};
-    el.innerHTML=avs.length?'<div class="etw"><table class="et"><thead><tr><th>Data</th><th>Peso</th><th>% Gord.</th><th>% Magra</th><th>CA</th><th>PA</th></tr></thead><tbody>'+avs.map(function(a){var g=a.gord||0;return'<tr><td>'+FD(a.data)+'</td><td>'+a.peso+'kg</td><td>'+g.toFixed(1)+'%</td><td>'+(100-g).toFixed(1)+'%</td><td>'+a.ca+'cm</td><td>'+(a.pa||"-")+"</td></tr>"}).join("")+"</tbody></table></div>":'<div class="empty">Nenhuma avaliacao.</div>';
-  }).catch(function(){document.getElementById("hist-av").innerHTML='<div class="empty">Erro ao carregar.</div>'});
-}
+function renderHistAdmin(pid){var el=document.getElementById("hist-av");if(!pid){el.innerHTML="";return}db.collection("avaliacoes").where("pid","==",pid).orderBy("data").get().then(function(s){var avs=s.docs.map(function(d){return d.data()});el.innerHTML=avs.length?'<div class="etw"><table class="et"><thead><tr><th>Data</th><th>Peso</th><th>% Gord.</th><th>% Magra</th><th>CA</th><th>PA</th></tr></thead><tbody>'+avs.map(function(a){var g=a.gord||0;return'<tr><td>'+FD(a.data)+'</td><td>'+a.peso+'kg</td><td>'+g.toFixed(1)+'%</td><td>'+(100-g).toFixed(1)+'%</td><td>'+a.ca+'cm</td><td>'+(a.pa||"-")+"</td></tr>"}).join("")+"</tbody></table></div>":'<div class="empty">Nenhuma avaliacao.</div>'}).catch(function(){document.getElementById("hist-av").innerHTML='<div class="empty">Erro.</div>'})}
 
-function renderAdm(){
-  Promise.all([db.collection("treinos").get(),db.collection("laudos").get()]).then(function(r){
-    document.getElementById("adm-metrics").innerHTML='<div class="mc"><div class="v">'+allP.length+'</div><div class="l">Participantes</div></div><div class="mc"><div class="v">'+r[0].size+'</div><div class="l">Treinos</div></div><div class="mc"><div class="v">'+r[1].size+'</div><div class="l">Laudos</div></div>';
-  }).catch(function(){});
-}
+function renderAdm(){Promise.all([db.collection("treinos").get(),db.collection("laudos").get()]).then(function(r){document.getElementById("adm-metrics").innerHTML='<div class="mc"><div class="v">'+allP.length+'</div><div class="l">Participantes</div></div><div class="mc"><div class="v">'+r[0].size+'</div><div class="l">Treinos</div></div><div class="mc"><div class="v">'+r[1].size+'</div><div class="l">Laudos</div></div>'}).catch(function(){})}
+function alterarSenha(){var p1=document.getElementById("adm-p1").value,p2=document.getElementById("adm-p2").value;if(!p1||p1!==p2){T("Senhas nao coincidem.");return}db.collection("config").doc("admin").set({pwd:p1}).then(function(){adminPwd=p1;T("Senha alterada!");document.getElementById("adm-p1").value="";document.getElementById("adm-p2").value=""}).catch(function(e){T("Erro: "+e.message)})}
+function resetarCiclo(){if(!confirm("Remover treinos, avaliacoes e laudos?"))return;var cols=["treinos","avaliacoes","laudos","ergometrico","pontos"],done=0;cols.forEach(function(c){db.collection(c).get().then(function(s){var b=db.batch();s.docs.forEach(function(d){b.delete(d.ref)});return b.commit()}).then(function(){done++;if(done===cols.length){T("Ciclo resetado!");renderRanking();renderAdm()}}).catch(function(){done++})})}
 
-function alterarSenha(){
-  var p1=document.getElementById("adm-p1").value,p2=document.getElementById("adm-p2").value;
-  if(!p1||p1!==p2){T("Senhas nao coincidem.");return}
-  db.collection("config").doc("admin").set({pwd:p1}).then(function(){adminPwd=p1;T("Senha alterada!");document.getElementById("adm-p1").value="";document.getElementById("adm-p2").value=""}).catch(function(e){T("Erro: "+e.message)});
-}
+function download(fn,rows){var csv=rows.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"'}).join(",")}).join("\n");var blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});var url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=fn;a.click();URL.revokeObjectURL(url);T("Exportado: "+fn)}
+function exportCSV(tipo){var rows=[],fn="";if(tipo==="p"){fn="participantes.csv";rows=[["Nome","Matricula","Dept","Sexo","Idade","Altura","Peso","CA","Gord%","LDL","TGL","HbA1c","Tabag","DM"]];allP.forEach(function(p){rows.push([p.nome,p.mat,p.dept,p.sexo,p.idade||"",p.altura,p.peso,p.ca,p.gord||"",p.ldl||"",p.tgl||"",p.hba1c||"",p.tabag?"Sim":"Nao",p.dm?"Sim":"Nao"])});download(fn,rows)}else if(tipo==="a"){fn="avaliacoes.csv";rows=[["Nome","Dept","Data","Peso","CA","Gord%","PA"]];db.collection("avaliacoes").orderBy("data").get().then(function(s){s.docs.forEach(function(d){var a=d.data(),p=allP.find(function(x){return x.id===a.pid})||{};rows.push([p.nome||"",p.dept||"",a.data,a.peso,a.ca,a.gord||"",a.pa||""])});download(fn,rows)})}else if(tipo==="t"){fn="treinos.csv";rows=[["Nome","Dept","Data","Tipo","Duracao"]];db.collection("treinos").orderBy("data","desc").get().then(function(s){s.docs.forEach(function(d){var t=d.data(),p=allP.find(function(x){return x.id===t.pid})||{};rows.push([p.nome||"",p.dept||"",t.data,t.tipo,t.duracao])});download(fn,rows)})}else{fn="ranking.csv";rows=[["Posicao","Departamento","Membros","Pts medios"]];if(!allP.length){download(fn,rows);return}var depts={};DEPTS.forEach(function(x){depts[x]={nm:x,pts:0,count:0}});var pd=allP.length;allP.forEach(function(p){getPts(p.id,function(r){if(depts[p.dept]){depts[p.dept].pts+=r.total;depts[p.dept].count++}pd--;if(pd===0){Object.values(depts).filter(function(x){return x.count>0}).map(function(x){return Object.assign({},x,{media:Math.round(x.pts/x.count)})}).sort(function(a,b){return b.media-a.media}).forEach(function(x,i){rows.push([i+1,x.nm,x.count,x.media])});download(fn,rows)}})})}}
 
-function resetarCiclo(){
-  if(!confirm("Remover treinos, avaliacoes e laudos?"))return;
-  var cols=["treinos","avaliacoes","laudos","ergometrico","pontos"],done=0;
-  cols.forEach(function(c){db.collection(c).get().then(function(s){var b=db.batch();s.docs.forEach(function(d){b.delete(d.ref)});return b.commit()}).then(function(){done++;if(done===cols.length){T("Ciclo resetado!");renderRanking();renderAdm()}}).catch(function(){done++})});
-}
-
-function download(fn,rows){
-  var csv=rows.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"'}).join(",")}).join("
-");
-  var blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});
-  var url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=fn;a.click();URL.revokeObjectURL(url);T("Exportado: "+fn);
-}
-
-function exportCSV(tipo){
-  var rows=[],fn="";
-  if(tipo==="p"){fn="participantes.csv";rows=[["Nome","Matricula","Dept","Sexo","Idade","Altura","Peso","CA","Gord%","LDL","TGL","HbA1c","Tabag","DM"]];allP.forEach(function(p){rows.push([p.nome,p.mat,p.dept,p.sexo,p.idade||"",p.altura,p.peso,p.ca,p.gord||"",p.ldl||"",p.tgl||"",p.hba1c||"",p.tabag?"Sim":"Nao",p.dm?"Sim":"Nao"])});download(fn,rows)}
-  else if(tipo==="a"){fn="avaliacoes.csv";rows=[["Nome","Dept","Data","Peso","CA","Gord%","PA"]];db.collection("avaliacoes").orderBy("data").get().then(function(s){s.docs.forEach(function(d){var a=d.data(),p=allP.find(function(x){return x.id===a.pid})||{};rows.push([p.nome||"",p.dept||"",a.data,a.peso,a.ca,a.gord||"",a.pa||""])});download(fn,rows)})}
-  else if(tipo==="t"){fn="treinos.csv";rows=[["Nome","Dept","Data","Tipo","Duracao"]];db.collection("treinos").orderBy("data","desc").get().then(function(s){s.docs.forEach(function(d){var t=d.data(),p=allP.find(function(x){return x.id===t.pid})||{};rows.push([p.nome||"",p.dept||"",t.data,t.tipo,t.duracao])});download(fn,rows)})}
-  else{fn="ranking.csv";rows=[["Posicao","Departamento","Membros","Pts medios"]];var depts={};DEPTS.forEach(function(x){depts[x]={nm:x,pts:0,count:0}});if(!allP.length){download(fn,rows);return}var pd=allP.length;allP.forEach(function(p){getPts(p.id,function(r){if(depts[p.dept]){depts[p.dept].pts+=r.total;depts[p.dept].count++}pd--;if(pd===0){Object.values(depts).filter(function(x){return x.count>0}).map(function(x){return Object.assign({},x,{media:Math.round(x.pts/x.count)})}).sort(function(a,b){return b.media-a.media}).forEach(function(x,i){rows.push([i+1,x.nm,x.count,x.media])});download(fn,rows)}})})}
-}
-
-loadAdminPwd(function(){
-  loadParticipants(function(){
-    document.getElementById("av-data").value=new Date().toISOString().split("T")[0];
-    document.getElementById("t-mets-data").value=new Date().toISOString().split("T")[0];
-  });
-});
+// INIT — Firebase no final, depois de todas as funcoes
+try{
+  if(!firebase.apps.length){firebase.initializeApp({apiKey:"AIzaSyCZ5SxfuPxv25G5JBwjgdq-906AXHhWuGQ",authDomain:"operacao-saude-pf.firebaseapp.com",projectId:"operacao-saude-pf",storageBucket:"operacao-saude-pf.firebasestorage.app",messagingSenderId:"824450890759",appId:"1:824450890759:web:291f5caf0f36ef9f143ea2"})}
+  db=firebase.firestore();st=firebase.storage();
+  loadAdminPwd(function(){loadParticipants(function(){document.getElementById("av-data").value=new Date().toISOString().split("T")[0];document.getElementById("t-mets-data").value=new Date().toISOString().split("T")[0]})});
+}catch(e){console.error("Firebase:",e)}
 </script>
 </body>
 </html>
