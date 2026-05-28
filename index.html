@@ -406,14 +406,14 @@ input:focus,select:focus{border-color:var(--pf);box-shadow:0 0 0 3px rgba(24,95,
 <div id="toast" class="toast"></div>
 
 <script>
-firebase.initializeApp({
+if(!firebase.apps.length){firebase.initializeApp({
   apiKey:"AIzaSyCZ5SxfuPxv25G5JBwjgdq-906AXHhWuGQ",
   authDomain:"operacao-saude-pf.firebaseapp.com",
   projectId:"operacao-saude-pf",
   storageBucket:"operacao-saude-pf.firebasestorage.app",
   messagingSenderId:"824450890759",
   appId:"1:824450890759:web:291f5caf0f36ef9f143ea2"
-});
+})}
 var db=firebase.firestore(),st=firebase.storage();
 var DEPTS=["DGP","APF","EPF","DELTA"];
 var LAB={ldl:{nm:"LDL",u:"mg/dL",meta:130,meta2:100,pts:20,pts2:10,desc:"Meta: <130 mg/dL | Bonus extra: <100"},tgl:{nm:"TGL",u:"mg/dL",meta:150,pts:15,desc:"Meta: <150 mg/dL"},hba1c:{nm:"HbA1c",u:"%",meta:6.0,pts:25,desc:"Meta: <6,0% ou reducao >= 0,3%"}};
