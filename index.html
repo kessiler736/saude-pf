@@ -124,8 +124,8 @@ input:focus,select:focus{border-color:var(--pf)}
       <div style="font-size:12px;color:var(--text2);margin-top:3px">Policia Federal - Promocao a Saude</div>
     </div>
     <div class="auth-tabs">
-      <div class="auth-tab active" onclick="showTab('login')">Entrar</div>
-      <div class="auth-tab" onclick="showTab('cadastro')">Cadastrar-se</div>
+      <div class="auth-tab active" onclick="showAuthTab('login')">Entrar</div>
+      <div class="auth-tab" onclick="showAuthTab('cadastro')">Cadastrar-se</div>
     </div>
     <div id="auth-login">
       <label>Matricula</label>
@@ -448,7 +448,7 @@ async function recalc(pid){
   return r;
 }
 
-window.showTab=id=>{
+window.showAuthTab=id=>{
   document.getElementById("auth-login").style.display=id==="login"?"block":"none";
   document.getElementById("auth-cadastro").style.display=id==="cadastro"?"block":"none";
   document.querySelectorAll(".auth-tab").forEach((t,i)=>t.classList.toggle("active",i===(id==="login"?0:1)));
