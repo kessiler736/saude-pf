@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Saude PF">
 <meta name="theme-color" content="#185FA5">
-<title>Operacao Saude PF v2</title>
+<title>Operacao Saude PF - MVP Seguro</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -172,7 +172,7 @@ input:focus,select:focus{border-color:var(--pf);box-shadow:0 0 0 3px rgba(24,95,
       <label>Senha</label>
       <input id="login-pwd" type="password" placeholder="Senha" />
       <button class="btn btn-p btn-full" style="margin-top:4px" onclick="doLogin()"><i class="ti ti-login"></i> Entrar</button>
-      <p style="font-size:10px;color:var(--tx3);text-align:center;margin-top:14px">Admin: matricula <b>admin</b> &bull; senha <b>pf2026</b></p>
+      <p style="font-size:10px;color:var(--tx3);text-align:center;margin-top:14px">Acesso individual por matricula e senha.</p>
     </div>
     <div id="auth-cadastro" style="display:none">
       <div class="info-box"><i class="ti ti-info-circle"></i> Campos * obrigatorios. Exames podem ser adicionados depois.</div>
@@ -187,6 +187,10 @@ input:focus,select:focus{border-color:var(--pf);box-shadow:0 0 0 3px rgba(24,95,
       <div class="fr"><div><label>LDL (mg/dL)</label><input id="c-ldl" type="number" placeholder="145" /></div><div><label>TGL (mg/dL)</label><input id="c-tgl" type="number" placeholder="180" /></div></div>
       <div class="fr"><div><label>HbA1c (%)</label><input id="c-hba1c" type="number" placeholder="6.2" step="0.1" /></div><div><label>Tabagista?</label><select id="c-tabag"><option value="0">Nao</option><option value="1">Sim</option></select></div></div>
       <div class="fr"><div><label>Diabetes?</label><select id="c-dm"><option value="0">Nao</option><option value="1">Sim</option></select></div><div><label>Senha *</label><input id="c-pwd" type="password" placeholder="Min. 4 caracteres" /></div></div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:11px;line-height:1.45;color:var(--tx2);margin:4px 0 12px">
+        <input id="c-consent" type="checkbox" style="width:auto;margin:2px 0 0" />
+        <span>Declaro que estou ciente de que meus dados de saude serao usados exclusivamente para acompanhamento individual e calculo agregado do programa, conforme autorizacao institucional e normas de privacidade aplicaveis.</span>
+      </label>
       <button class="btn btn-p btn-full" onclick="doCadastro()"><i class="ti ti-user-plus"></i> Cadastrar e entrar</button>
     </div>
   </div>
@@ -377,6 +381,10 @@ input:focus,select:focus{border-color:var(--pf);box-shadow:0 0 0 3px rgba(24,95,
       </div>
 
       <div id="sec-adm" class="sec">
+        <div class="card" style="background:var(--wal);border-color:rgba(186,117,23,.35)">
+          <h3 style="color:var(--wa)"><i class="ti ti-alert-triangle"></i> Atenção: MVP demonstrativo</h3>
+          <p style="font-size:12px;color:var(--wa);line-height:1.6">Antes de uso institucional real com dados de saude, migrar login/senhas para Firebase Authentication e configurar regras restritivas do Firestore/Storage. Esta versao remove credenciais expostas da tela, mas ainda nao substitui autenticacao robusta.</p>
+        </div>
         <div class="g3" id="adm-metrics"></div>
         <div class="card"><h3><i class="ti ti-download"></i> Exportar CSV</h3>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -477,7 +485,9 @@ function doCadastro(){
   var hba1c=parseFloat(document.getElementById("c-hba1c").value)||null;
   var tabag=parseInt(document.getElementById("c-tabag").value)||0,dm=parseInt(document.getElementById("c-dm").value)||0;
   var pwd=document.getElementById("c-pwd").value;
+  var consent=document.getElementById("c-consent").checked;
   if(!nome||!mat||!dept||!sexo||!altura||!peso||!ca||!pwd){T("Preencha os campos obrigatorios (*).");return}
+  if(!consent){T("E necessario aceitar o termo de ciencia e privacidade.");return}
   if(allP.find(function(x){return x.mat===mat})){T("Matricula ja cadastrada.");return}
   if(pwd.length<4){T("Senha: minimo 4 caracteres.");return}
   T("Cadastrando...",6000);
