@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Saude PF">
 <meta name="theme-color" content="#185FA5">
-<title>Operacao Saude PF v5</title>
+<title>Operacao Saude PF v6</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -448,8 +448,31 @@ function loadParticipants(cb){db.collection("participantes").get().then(function
 function loadAdminPwd(cb){db.collection("config").doc("admin").get().then(function(d){if(d.exists)adminPwd=d.data().pwd||"pf2026";if(cb)cb()}).catch(function(){if(cb)cb()})}
 function getPts(pid,cb){db.collection("pontos").doc(pid).get().then(function(d){cb(d.exists?d.data():{total:0,comp:0,res:0})}).catch(function(){cb({total:0,comp:0,res:0})})}
 
+function calcFromLocal(p){
+  var comp=0,res=0;
+  comp+=(mT||[]).length*5;
+  var avs=(mA||[]).slice().sort(function(a,b){return a.data<b.data?-1:1});
+  comp+=avs.length*10;
+  if(avs.length>=2){
+    var f=avs[0],l=avs[avs.length-1];
+    if((f.gord||0)-(l.gord||0)>=0.5)res+=15;
+    if(((100-(l.gord||0))-(100-(f.gord||0)))>=0.5)res+=15;
+    if((f.ca-l.ca)>=1)res+=15;
+    if(p.sexo==="M"?l.ca<94:l.ca<80)res+=15;
+    if(l.gord&&(p.sexo==="M"?l.gord<20:l.gord<28))res+=15;
+  }
+  var ls=mL||[];comp+=ls.length*10;
+  ls.forEach(function(l){var cfg=LAB[l.tipo];if(!cfg)return;if(l.valor<cfg.meta){res+=cfg.pts;if(cfg.meta2&&l.valor<cfg.meta2)res+=(cfg.pts2||0)}else if(l.tipo==="hba1c"&&p.hba1c&&(p.hba1c-l.valor)>=0.3)res+=cfg.pts});
+  return{total:comp+res,comp:comp,res:res};
+}
+
 function recalc(pid,cb){
   var p=allP.find(function(x){return x.id===pid});if(!p){cb({total:0,comp:0,res:0});return}
+  if(cu&&pid===cu.id&&mT&&mA&&mL&&mE){
+    var r=calcFromLocal(p);
+    db.collection("pontos").doc(pid).set(r).catch(function(){});
+    cb(r);return;
+  }
   var comp=0,res=0,done=0;
   function check(){done++;if(done===3){var r={total:comp+res,comp:comp,res:res};db.collection("pontos").doc(pid).set(r).catch(function(){});cb(r)}}
   db.collection("treinos").where("pid","==",pid).get().then(function(s){comp+=s.size*5;check()}).catch(check);
@@ -511,7 +534,7 @@ function enterApp(){
   document.getElementById("tb-user").textContent=isAdmin?"Administrador":cu.nome.split(" ")[0]+" - "+cu.dept;
   if(!isAdmin)document.getElementById("tb-pts").style.display="block";
   if(isAdmin)document.querySelectorAll(".admin-only").forEach(function(e){e.style.display="flex"});
-  renderRanking();switchTab("ranking");
+  switchTab("ranking");
 }
 
 function logout(){
@@ -532,6 +555,7 @@ function switchTab(id){
 }
 
 function renderRanking(){
+  if(rankCache&&!rankDirty){_drawRanking(rankCache.arr,rankCache.depts);return}
   var depts={};DEPTS.forEach(function(x){depts[x]={nm:x,pts:0,count:0}});
   if(!allP.length){
     document.getElementById("hero-leader").textContent="Sem participantes";document.getElementById("hero-pts").textContent="";
@@ -543,6 +567,7 @@ function renderRanking(){
   db.collection("pontos").get().then(function(s){
     var ptsMap={};s.docs.forEach(function(d){ptsMap[d.id]=d.data()});
     var ptsArr=allP.map(function(p){var r=ptsMap[p.id]||{total:0,comp:0,res:0};if(depts[p.dept]){depts[p.dept].pts+=r.total;depts[p.dept].count++}return{p:p,r:r}});
+    rankCache={arr:ptsArr,depts:depts};rankDirty=false;
     _drawRanking(ptsArr,depts);
   }).catch(function(){_drawRanking(allP.map(function(p){return{p:p,r:{total:0,comp:0,res:0}}}),depts)});
 }
@@ -603,7 +628,7 @@ function registrarTreino(){
   T("Salvando...",5000);
   function salvar(fotoUrl){
     db.collection("treinos").add({pid:cu.id,dept:cu.dept,tipo:tipo,duracao:parseInt(dur),fotoUrl:fotoUrl||"",data:new Date().toISOString().split("T")[0],ts:firebase.firestore.FieldValue.serverTimestamp()})
-    .then(function(){mT=null;fF=null;T("Treino registrado! +5 pts");document.getElementById("t-tipo").value="";document.getElementById("t-dur").value="";document.getElementById("fp1").style.display="none";document.getElementById("ua1").classList.remove("has");document.getElementById("ui1").className="ti ti-camera-plus";document.getElementById("ut1").textContent="Toque para tirar foto";recalc(cu.id,function(){renderTreino();renderRanking()})})
+    .then(function(){mT=null;fF=null;T("Treino registrado! +5 pts");document.getElementById("t-tipo").value="";document.getElementById("t-dur").value="";document.getElementById("fp1").style.display="none";document.getElementById("ua1").classList.remove("has");document.getElementById("ui1").className="ti ti-camera-plus";document.getElementById("ut1").textContent="Toque para tirar foto";rankDirty=true;renderTreino()})
     .catch(function(e){T("Erro: "+e.message)});
   }
   if(fF)uploadFoto(fF,"treinos/"+cu.id+"/"+Date.now()+".jpg","prog1","prog1f",salvar);else salvar("");
@@ -615,7 +640,7 @@ function registrarErgo(){
   if(!mets||!data){T("Preencha METs e data.");return}
   T("Salvando...",5000);
   db.collection("ergometrico").add({pid:cu.id,dept:cu.dept,mets:mets,data:data,ts:firebase.firestore.FieldValue.serverTimestamp()})
-  .then(function(){mE=null;T(mets>=10?"Registrado! +20 pts":"Registrado - abaixo de 10 METs");document.getElementById("t-mets").value="";recalc(cu.id,function(){renderTreino();renderRanking()})})
+  .then(function(){mE=null;T(mets>=10?"Registrado! +20 pts":"Registrado - abaixo de 10 METs");document.getElementById("t-mets").value="";rankDirty=true;renderTreino()})
   .catch(function(e){T("Erro: "+e.message)});
 }
 
@@ -674,7 +699,7 @@ function enviarLaudo(){
   T("Enviando...",5000);
   function salvar(fotoUrl){
     db.collection("laudos").add({pid:cu.id,dept:cu.dept,tipo:tipo,valor:valor,fotoUrl:fotoUrl||"",data:new Date().toISOString().split("T")[0],ts:firebase.firestore.FieldValue.serverTimestamp()})
-    .then(function(){mL=null;T("Laudo enviado!");lF=null;document.getElementById("lab-tipo").value="";document.getElementById("lab-valor").value="";document.getElementById("fp2").style.display="none";document.getElementById("ua2").classList.remove("has");document.getElementById("ui2").className="ti ti-file-certificate";document.getElementById("ut2").textContent="Toque para anexar foto do laudo";recalc(cu.id,function(){renderLab();renderRanking()})})
+    .then(function(){mL=null;T("Laudo enviado!");lF=null;document.getElementById("lab-tipo").value="";document.getElementById("lab-valor").value="";document.getElementById("fp2").style.display="none";document.getElementById("ua2").classList.remove("has");document.getElementById("ui2").className="ti ti-file-certificate";document.getElementById("ut2").textContent="Toque para anexar foto do laudo";rankDirty=true;renderLab()})
     .catch(function(e){T("Erro: "+e.message)});
   }
   if(lF)uploadFoto(lF,"laudos/"+cu.id+"/"+Date.now()+".jpg","prog2","prog2f",salvar);else salvar("");
@@ -723,7 +748,7 @@ function registrarAv(){
   if(!pid||!data||!peso||!ca){T("Preencha os campos obrigatorios.");return}
   T("Salvando...",5000);
   db.collection("avaliacoes").add({pid:pid,data:data,peso:peso,ca:ca,gord:gord,pa:pa,ts:firebase.firestore.FieldValue.serverTimestamp()})
-  .then(function(){if(cu&&pid===cu.id)mA=null;T("Avaliacao registrada!");["av-peso","av-ca","av-gord","av-pa"].forEach(function(f){document.getElementById(f).value=""});recalc(pid,function(){renderRanking()})})
+  .then(function(){if(cu&&pid===cu.id)mA=null;T("Avaliacao registrada!");["av-peso","av-ca","av-gord","av-pa"].forEach(function(f){document.getElementById(f).value=""});recalc(pid,function(){rankDirty=true})})
   .catch(function(e){T("Erro: "+e.message)});
 }
 
@@ -770,6 +795,7 @@ function exportCSV(tipo){
 try{
   if(!firebase.apps.length){firebase.initializeApp({apiKey:"AIzaSyCZ5SxfuPxv25G5JBwjgdq-906AXHhWuGQ",authDomain:"operacao-saude-pf.firebaseapp.com",projectId:"operacao-saude-pf",storageBucket:"operacao-saude-pf.firebasestorage.app",messagingSenderId:"824450890759",appId:"1:824450890759:web:291f5caf0f36ef9f143ea2"})}
   db=firebase.firestore();st=firebase.storage();
+  try{db.enablePersistence({synchronizeTabs:true}).catch(function(){})}catch(e){}
   loadAdminPwd(function(){loadParticipants(function(){document.getElementById("av-data").value=new Date().toISOString().split("T")[0];document.getElementById("t-mets-data").value=new Date().toISOString().split("T")[0]})});
 }catch(e){console.error("Firebase:",e)}
 </script>
