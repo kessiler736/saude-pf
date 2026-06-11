@@ -187,6 +187,12 @@ input:focus,select:focus{border-color:var(--pf);box-shadow:0 0 0 3px rgba(24,95,
       <div class="fr"><div><label>LDL (mg/dL)</label><input id="c-ldl" type="number" placeholder="145" /></div><div><label>TGL (mg/dL)</label><input id="c-tgl" type="number" placeholder="180" /></div></div>
       <div class="fr"><div><label>HbA1c (%)</label><input id="c-hba1c" type="number" placeholder="6.2" step="0.1" /></div><div><label>Tabagista?</label><select id="c-tabag"><option value="0">Nao</option><option value="1">Sim</option></select></div></div>
       <div class="fr"><div><label>Diabetes?</label><select id="c-dm"><option value="0">Nao</option><option value="1">Sim</option></select></div><div><label>Senha *</label><input id="c-pwd" type="password" placeholder="Min. 4 caracteres" /></div></div>
+      <div style="background:var(--pfl,#EBF2FC);border-radius:8px;padding:10px 12px;margin-bottom:11px;font-size:11px;line-height:1.5;color:#1B3F72">
+        <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-size:11px;color:#1B3F72;margin:0">
+          <input type="checkbox" id="c-lgpd" style="width:auto;margin:2px 0 0 0;flex-shrink:0" />
+          <span><b>Termo de Consentimento (LGPD):</b> autorizo o uso dos meus dados de saude exclusivamente para fins do programa Operacao Saude PF, sob responsabilidade do medico do programa, podendo solicitar exclusao a qualquer momento.</span>
+        </label>
+      </div>
       <button class="btn btn-p btn-full" onclick="doCadastro()"><i class="ti ti-user-plus"></i> Cadastrar e entrar</button>
     </div>
   </div>
@@ -462,9 +468,17 @@ function recalc(pid,cb){
 function doLogin(){
   var mat=document.getElementById("login-mat").value.trim(),pwd=document.getElementById("login-pwd").value;
   if(!mat||!pwd){T("Preencha matricula e senha.");return}
-  if(mat==="admin"&&pwd===adminPwd){isAdmin=true;cu={nome:"Administrador",dept:"PF",id:"admin",mat:"admin"};enterApp();return}
-  var p=allP.find(function(x){return x.mat===mat&&x.pwd===pwd});
-  if(p){isAdmin=false;cu=p;enterApp()}else T("Matricula ou senha incorretos.");
+  if(mat==="admin"&&pwd===adminPwd){isAdmin=true;cu={nome:"Administrador",dept:"PF",id:"admin",mat:"admin"};loadParticipants(function(){enterApp()});return}
+  T("Verificando...",4000);
+  db.collection("participantes").where("mat","==",mat).get().then(function(s){
+    if(s.empty){T("Matricula nao encontrada. Verifique ou cadastre-se.");return}
+    var doc=s.docs[0],d=doc.data();
+    if(d.pwd!==pwd){T("Senha incorreta.");return}
+    var p=Object.assign({id:doc.id},d);
+    var i=allP.findIndex(function(x){return x.id===p.id});
+    if(i>=0)allP[i]=p;else allP.push(p);
+    isAdmin=false;cu=p;loadParticipants(function(){enterApp()});
+  }).catch(function(e){console.error("Login:",e);T("Erro de conexao: "+(e.code||e.message),6000)});
 }
 
 function doCadastro(){
@@ -480,12 +494,16 @@ function doCadastro(){
   if(!nome||!mat||!dept||!sexo||!altura||!peso||!ca||!pwd){T("Preencha os campos obrigatorios (*).");return}
   if(allP.find(function(x){return x.mat===mat})){T("Matricula ja cadastrada.");return}
   if(pwd.length<4){T("Senha: minimo 4 caracteres.");return}
+  if(!document.getElementById("c-lgpd").checked){T("E necessario aceitar o termo de consentimento (LGPD).");return}
   T("Cadastrando...",6000);
-  db.collection("participantes").add({nome:nome,mat:mat,dept:dept,sexo:sexo,idade:idade,altura:altura,peso:peso,ca:ca,gord:gord,pas:pas,ldl:ldl,tgl:tgl,hba1c:hba1c,tabag:tabag,dm:dm,pwd:pwd,ts:firebase.firestore.FieldValue.serverTimestamp()})
+  db.collection("participantes").add({nome:nome,mat:mat,dept:dept,sexo:sexo,idade:idade,altura:altura,peso:peso,ca:ca,gord:gord,pas:pas,ldl:ldl,tgl:tgl,hba1c:hba1c,tabag:tabag,dm:dm,pwd:pwd,lgpd:true,lgpdData:new Date().toISOString(),ts:firebase.firestore.FieldValue.serverTimestamp()})
   .then(function(ref){
-    var np={id:ref.id,nome:nome,mat:mat,dept:dept,sexo:sexo,idade:idade,altura:altura,peso:peso,ca:ca,gord:gord,pas:pas,ldl:ldl,tgl:tgl,hba1c:hba1c,tabag:tabag,dm:dm,pwd:pwd};
-    allP.push(np);isAdmin=false;cu=np;T("Bem-vindo, "+nome.split(" ")[0]+"!");enterApp();
-  }).catch(function(e){T("Erro ao cadastrar: "+e.message)});
+    return ref.get().then(function(doc){
+      if(!doc.exists)throw new Error("Gravacao nao confirmada pelo servidor.");
+      var np=Object.assign({id:ref.id},doc.data());
+      allP.push(np);isAdmin=false;cu=np;T("Cadastro confirmado! Bem-vindo, "+nome.split(" ")[0]+"!");enterApp();
+    });
+  }).catch(function(e){console.error("Cadastro:",e);T("ERRO ao cadastrar: "+(e.code||"")+" "+e.message,6000)});
 }
 
 function enterApp(){
