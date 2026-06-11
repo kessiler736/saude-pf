@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Saude PF">
 <meta name="theme-color" content="#185FA5">
-<title>Operacao Saude PF - MVP Seguro</title>
+<title>Operacao Saude PF</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -172,7 +172,7 @@ input:focus,select:focus{border-color:var(--pf);box-shadow:0 0 0 3px rgba(24,95,
       <label>Senha</label>
       <input id="login-pwd" type="password" placeholder="Senha" />
       <button class="btn btn-p btn-full" style="margin-top:4px" onclick="doLogin()"><i class="ti ti-login"></i> Entrar</button>
-      <p style="font-size:10px;color:var(--tx3);text-align:center;margin-top:14px">Acesso individual por matricula e senha.</p>
+      <p style="font-size:10px;color:var(--tx3);text-align:center;margin-top:14px">Admin: matricula <b>admin</b> &bull; senha <b>pf2026</b></p>
     </div>
     <div id="auth-cadastro" style="display:none">
       <div class="info-box"><i class="ti ti-info-circle"></i> Campos * obrigatorios. Exames podem ser adicionados depois.</div>
@@ -187,10 +187,6 @@ input:focus,select:focus{border-color:var(--pf);box-shadow:0 0 0 3px rgba(24,95,
       <div class="fr"><div><label>LDL (mg/dL)</label><input id="c-ldl" type="number" placeholder="145" /></div><div><label>TGL (mg/dL)</label><input id="c-tgl" type="number" placeholder="180" /></div></div>
       <div class="fr"><div><label>HbA1c (%)</label><input id="c-hba1c" type="number" placeholder="6.2" step="0.1" /></div><div><label>Tabagista?</label><select id="c-tabag"><option value="0">Nao</option><option value="1">Sim</option></select></div></div>
       <div class="fr"><div><label>Diabetes?</label><select id="c-dm"><option value="0">Nao</option><option value="1">Sim</option></select></div><div><label>Senha *</label><input id="c-pwd" type="password" placeholder="Min. 4 caracteres" /></div></div>
-      <label style="display:flex;gap:8px;align-items:flex-start;font-size:11px;line-height:1.45;color:var(--tx2);margin:4px 0 12px">
-        <input id="c-consent" type="checkbox" style="width:auto;margin:2px 0 0" />
-        <span>Declaro que estou ciente de que meus dados de saude serao usados exclusivamente para acompanhamento individual e calculo agregado do programa, conforme autorizacao institucional e normas de privacidade aplicaveis.</span>
-      </label>
       <button class="btn btn-p btn-full" onclick="doCadastro()"><i class="ti ti-user-plus"></i> Cadastrar e entrar</button>
     </div>
   </div>
@@ -381,10 +377,6 @@ input:focus,select:focus{border-color:var(--pf);box-shadow:0 0 0 3px rgba(24,95,
       </div>
 
       <div id="sec-adm" class="sec">
-        <div class="card" style="background:var(--wal);border-color:rgba(186,117,23,.35)">
-          <h3 style="color:var(--wa)"><i class="ti ti-alert-triangle"></i> Atenção: MVP demonstrativo</h3>
-          <p style="font-size:12px;color:var(--wa);line-height:1.6">Antes de uso institucional real com dados de saude, migrar login/senhas para Firebase Authentication e configurar regras restritivas do Firestore/Storage. Esta versao remove credenciais expostas da tela, mas ainda nao substitui autenticacao robusta.</p>
-        </div>
         <div class="g3" id="adm-metrics"></div>
         <div class="card"><h3><i class="ti ti-download"></i> Exportar CSV</h3>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -455,8 +447,8 @@ function recalc(pid,cb){
   var comp=0,res=0,done=0;
   function check(){done++;if(done===3){var r={total:comp+res,comp:comp,res:res};db.collection("pontos").doc(pid).set(r).catch(function(){});cb(r)}}
   db.collection("treinos").where("pid","==",pid).get().then(function(s){comp+=s.size*5;check()}).catch(check);
-  db.collection("avaliacoes").where("pid","==",pid).orderBy("data").get().then(function(s){
-    var avs=s.docs.map(function(d){return d.data()});comp+=avs.length*10;
+  db.collection("avaliacoes").where("pid","==",pid).get().then(function(s){
+    var avs=s.docs.map(function(d){return d.data()}).sort(function(a,b){return a.data<b.data?-1:1});comp+=avs.length*10;
     if(avs.length>=2){var f=avs[0],l=avs[avs.length-1];if((f.gord||0)-(l.gord||0)>=0.5)res+=15;if(((100-(l.gord||0))-(100-(f.gord||0)))>=0.5)res+=15;if((f.ca-l.ca)>=1)res+=15;if(p.sexo==="M"?l.ca<94:l.ca<80)res+=15;if(l.gord&&(p.sexo==="M"?l.gord<20:l.gord<28))res+=15}
     check();
   }).catch(check);
@@ -485,9 +477,7 @@ function doCadastro(){
   var hba1c=parseFloat(document.getElementById("c-hba1c").value)||null;
   var tabag=parseInt(document.getElementById("c-tabag").value)||0,dm=parseInt(document.getElementById("c-dm").value)||0;
   var pwd=document.getElementById("c-pwd").value;
-  var consent=document.getElementById("c-consent").checked;
   if(!nome||!mat||!dept||!sexo||!altura||!peso||!ca||!pwd){T("Preencha os campos obrigatorios (*).");return}
-  if(!consent){T("E necessario aceitar o termo de ciencia e privacidade.");return}
   if(allP.find(function(x){return x.mat===mat})){T("Matricula ja cadastrada.");return}
   if(pwd.length<4){T("Senha: minimo 4 caracteres.");return}
   T("Cadastrando...",6000);
@@ -532,8 +522,11 @@ function renderRanking(){
     document.getElementById("ranking-full").innerHTML="";
     document.getElementById("destaques-list").innerHTML='<div class="empty">Nenhum dado ainda.</div>';return;
   }
-  var ptsArr=[],pending=allP.length;
-  allP.forEach(function(p){getPts(p.id,function(r){ptsArr.push({p:p,r:r});if(depts[p.dept]){depts[p.dept].pts+=r.total;depts[p.dept].count++}pending--;if(pending===0)_drawRanking(ptsArr,depts)})});
+  db.collection("pontos").get().then(function(s){
+    var ptsMap={};s.docs.forEach(function(d){ptsMap[d.id]=d.data()});
+    var ptsArr=allP.map(function(p){var r=ptsMap[p.id]||{total:0,comp:0,res:0};if(depts[p.dept]){depts[p.dept].pts+=r.total;depts[p.dept].count++}return{p:p,r:r}});
+    _drawRanking(ptsArr,depts);
+  }).catch(function(){_drawRanking(allP.map(function(p){return{p:p,r:{total:0,comp:0,res:0}}}),depts)});
 }
 
 function _drawRanking(ptsArr,depts){
@@ -559,10 +552,10 @@ function _drawRanking(ptsArr,depts){
 function getMyData(cb){
   if(!cu||isAdmin){cb();return}
   var done=0;function check(){done++;if(done===4)cb()}
-  if(!mT){db.collection("treinos").where("pid","==",cu.id).orderBy("data","desc").get().then(function(s){mT=s.docs.map(function(d){return Object.assign({id:d.id},d.data())});check()}).catch(function(){mT=[];check()})}else check();
-  if(!mA){db.collection("avaliacoes").where("pid","==",cu.id).orderBy("data").get().then(function(s){mA=s.docs.map(function(d){return d.data()});check()}).catch(function(){mA=[];check()})}else check();
-  if(!mL){db.collection("laudos").where("pid","==",cu.id).orderBy("data","desc").get().then(function(s){mL=s.docs.map(function(d){return d.data()});check()}).catch(function(){mL=[];check()})}else check();
-  if(!mE){db.collection("ergometrico").where("pid","==",cu.id).orderBy("data").get().then(function(s){mE=s.docs.map(function(d){return d.data()});check()}).catch(function(){mE=[];check()})}else check();
+  if(!mT){db.collection("treinos").where("pid","==",cu.id).get().then(function(s){mT=s.docs.map(function(d){return Object.assign({id:d.id},d.data())}).sort(function(a,b){return b.data<a.data?-1:1});check()}).catch(function(){mT=[];check()})}else check();
+  if(!mA){db.collection("avaliacoes").where("pid","==",cu.id).get().then(function(s){mA=s.docs.map(function(d){return d.data()}).sort(function(a,b){return a.data<b.data?-1:1});check()}).catch(function(){mA=[];check()})}else check();
+  if(!mL){db.collection("laudos").where("pid","==",cu.id).get().then(function(s){mL=s.docs.map(function(d){return d.data()}).sort(function(a,b){return b.data<a.data?-1:1});check()}).catch(function(){mL=[];check()})}else check();
+  if(!mE){db.collection("ergometrico").where("pid","==",cu.id).get().then(function(s){mE=s.docs.map(function(d){return d.data()}).sort(function(a,b){return a.data<b.data?-1:1});check()}).catch(function(){mE=[];check()})}else check();
 }
 
 function mkThumb(url,icon){
@@ -718,8 +711,8 @@ function registrarAv(){
 
 function renderHistAdmin(pid){
   var el=document.getElementById("hist-av");if(!pid){el.innerHTML="";return}
-  db.collection("avaliacoes").where("pid","==",pid).orderBy("data").get().then(function(s){
-    var avs=s.docs.map(function(d){return d.data()});
+  db.collection("avaliacoes").where("pid","==",pid).get().then(function(s){
+    var avs=s.docs.map(function(d){return d.data()}).sort(function(a,b){return a.data<b.data?-1:1});
     el.innerHTML=avs.length?'<div class="etw"><table class="et"><thead><tr><th>Data</th><th>Peso</th><th>% Gord.</th><th>% Magra</th><th>CA</th><th>PA</th></tr></thead><tbody>'+avs.map(function(a){var g=a.gord||0;return'<tr><td>'+FD(a.data)+'</td><td>'+a.peso+'kg</td><td>'+g.toFixed(1)+'%</td><td>'+(100-g).toFixed(1)+'%</td><td>'+a.ca+'cm</td><td>'+(a.pa||"-")+"</td></tr>"}).join("")+"</tbody></table></div>":'<div class="empty">Nenhuma avaliacao.</div>';
   }).catch(function(){document.getElementById("hist-av").innerHTML='<div class="empty">Erro.</div>'});
 }
@@ -751,9 +744,9 @@ function download(fn,rows){
 function exportCSV(tipo){
   var rows=[],fn="";
   if(tipo==="p"){fn="participantes.csv";rows=[["Nome","Matricula","Dept","Sexo","Idade","Altura","Peso","CA","Gord%","LDL","TGL","HbA1c","Tabag","DM"]];allP.forEach(function(p){rows.push([p.nome,p.mat,p.dept,p.sexo,p.idade||"",p.altura,p.peso,p.ca,p.gord||"",p.ldl||"",p.tgl||"",p.hba1c||"",p.tabag?"Sim":"Nao",p.dm?"Sim":"Nao"])});download(fn,rows)}
-  else if(tipo==="a"){fn="avaliacoes.csv";rows=[["Nome","Dept","Data","Peso","CA","Gord%","PA"]];db.collection("avaliacoes").orderBy("data").get().then(function(s){s.docs.forEach(function(d){var a=d.data(),p=allP.find(function(x){return x.id===a.pid})||{};rows.push([p.nome||"",p.dept||"",a.data,a.peso,a.ca,a.gord||"",a.pa||""])});download(fn,rows)})}
-  else if(tipo==="t"){fn="treinos.csv";rows=[["Nome","Dept","Data","Tipo","Duracao"]];db.collection("treinos").orderBy("data","desc").get().then(function(s){s.docs.forEach(function(d){var t=d.data(),p=allP.find(function(x){return x.id===t.pid})||{};rows.push([p.nome||"",p.dept||"",t.data,t.tipo,t.duracao])});download(fn,rows)})}
-  else{fn="ranking.csv";rows=[["Posicao","Departamento","Membros","Pts medios"]];if(!allP.length){download(fn,rows);return}var depts={};DEPTS.forEach(function(x){depts[x]={nm:x,pts:0,count:0}});var pd=allP.length;allP.forEach(function(p){getPts(p.id,function(r){if(depts[p.dept]){depts[p.dept].pts+=r.total;depts[p.dept].count++}pd--;if(pd===0){Object.values(depts).filter(function(x){return x.count>0}).map(function(x){return Object.assign({},x,{media:Math.round(x.pts/x.count)})}).sort(function(a,b){return b.media-a.media}).forEach(function(x,i){rows.push([i+1,x.nm,x.count,x.media])});download(fn,rows)}})})}
+  else if(tipo==="a"){fn="avaliacoes.csv";rows=[["Nome","Dept","Data","Peso","CA","Gord%","PA"]];db.collection("avaliacoes").get().then(function(s){s.docs.forEach(function(d){var a=d.data(),p=allP.find(function(x){return x.id===a.pid})||{};rows.push([p.nome||"",p.dept||"",a.data,a.peso,a.ca,a.gord||"",a.pa||""])});download(fn,rows)})}
+  else if(tipo==="t"){fn="treinos.csv";rows=[["Nome","Dept","Data","Tipo","Duracao"]];db.collection("treinos").get().then(function(s){s.docs.forEach(function(d){var t=d.data(),p=allP.find(function(x){return x.id===t.pid})||{};rows.push([p.nome||"",p.dept||"",t.data,t.tipo,t.duracao])});download(fn,rows)})}
+  else{fn="ranking.csv";rows=[["Posicao","Departamento","Membros","Pts medios"]];if(!allP.length){download(fn,rows);return}var depts={};DEPTS.forEach(function(x){depts[x]={nm:x,pts:0,count:0}});db.collection("pontos").get().then(function(s){var pm={};s.docs.forEach(function(d){pm[d.id]=d.data()});allP.forEach(function(p){var r=pm[p.id]||{total:0};if(depts[p.dept]){depts[p.dept].pts+=r.total;depts[p.dept].count++}});Object.values(depts).filter(function(x){return x.count>0}).map(function(x){return Object.assign({},x,{media:Math.round(x.pts/x.count)})}).sort(function(a,b){return b.media-a.media}).forEach(function(x,i){rows.push([i+1,x.nm,x.count,x.media])});download(fn,rows)})}
 }
 
 try{
